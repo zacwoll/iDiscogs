@@ -1,0 +1,2 @@
+Google Cloud API key
+GCP_API_KEY=AIzaSyDyQN2rdDE9UUj3uIrgbfLROFuL9L--0fE
