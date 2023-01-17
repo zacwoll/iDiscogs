@@ -4,8 +4,13 @@
     "cookie-parser": "^1.4.6",
     "crypto": "^1.0.1",
     "disconnect": "^1.2.2",
+    "esbuild": "0.17.2",
     "express": "^4.18.2",
     "localtunnel": "^2.0.2",
     "pug": "^3.0.2"
+  },
+  
+  "scripts": {
+    "build": "esbuild server.js --bundle --outfile=out.js"
   }
 }
