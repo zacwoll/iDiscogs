@@ -4,10 +4,8 @@ html
      | iDiscogs
   body
     form(role='form' method='POST' action='/auth')
-      div.form-group
+      fieldset
         label(for='verification') Input the code here:
         br
-        input#name.form-control(type='text', placeholder='verify code' name='name')
-        input#oauth-token.form-control(type="text" name="oauth-token" value=oauth.oauth_token)
-        input#oauth-token-secret.form-control(type="text" name="oauth-token-secret" value=oauth.oauth_token_secret)
-      button(type="submit", name="verify-token") Submit
+        input.form-control(type='text', placeholder='verify code' id='token' name='token')
+      button(type="submit") Submit
