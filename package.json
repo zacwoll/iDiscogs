@@ -11,7 +11,7 @@
   },
   
   "scripts": {
-    "build": "esbuild ./express/server.js --bundle --outfile=app.js --platform=node",
-    "watch": "esbuild ./express/server.js --bundle --outdir=frontend --platform=node --watch"
+    "build": "esbuild ./backend/server.js --bundle --outfile=backend.js --platform=node",
+    "watch": "esbuild ./backend/server.js --bundle --outdir=frontend --platform=node --watch"
   }
 }

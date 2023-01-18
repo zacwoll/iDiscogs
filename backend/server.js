@@ -15,6 +15,7 @@ app.use(cookieParser());
 
 // crypo module
 const crypto = require ("crypto");
+const path = require('path');
 
 const algorithm = "aes-256-cbc";
 
@@ -87,11 +88,10 @@ const callback_url = "";
 
 const AUTH_URL = 'https://api.discogs.com/oauth/access_token';
 
-
-
 // Set up the public assets
-app.use(express.static('public'))
-app.set('views', './views')
+app.use(express.static('public'));
+console.log(path.join(__dirname + '/frontend/views'));
+app.set('views', path.join(__dirname, '/frontend/views'));
 app.set('view engine', 'pug');
 
 
@@ -203,10 +203,11 @@ async function createAuthorizedRequest(api_key, api_secret, oauth_token, oauth_s
 
 app.get('/', async (req, res) => {
     const cookies = req.cookies;
-    console.log(cookies);
-    console.log(cookies.oauth_token);
     if (cookies.oauth_token) {
-        res.render('/identity', {});
+        res.render('identity', {});
+    }
+    else {
+        res.redirect('/new_user');
     }
 
     // if (req.cookie.oauth_token === undefined) {
