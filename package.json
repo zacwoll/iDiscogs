@@ -11,6 +11,7 @@
   },
   
   "scripts": {
-    "build": "esbuild server.js --bundle --outfile=out.js"
+    "build": "esbuild ./express/server.js --bundle --outfile=app.js --platform=node",
+    "watch": "esbuild ./express/server.js --bundle --outdir=frontend --platform=node --watch"
   }
 }

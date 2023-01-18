@@ -171,40 +171,65 @@ async function postVerificationToken(api_key, api_secret, oauth_token, oauth_sec
     return response;
 }
 
-app.get('/', async (req, res) => {
-    try {
-        // Set oauth token cookie
+// Test how to create an authorized request on getting a 200 response from 
+// GET https://api.discogs.com/oauth/identity
+// oauth 
+async function createAuthorizedRequest(api_key, api_secret, oauth_token, oauth_secret, oauth_verifier) {
+    // This is the url but I'd like to create a more basic version of this that accepts a URL arg
+    const IDENTITY_URL = 'https://api.discogs.com/oauth/identity';
 
-        // Get oauth_token { oauth_token, oauth_secret }
-        const oauth = await getOauthToken(DISCOGS_API_KEY, DISCOGS_API_SECRET, DISCOGS_OAUTH_REQUEST_TOKEN_URL, callback_url);
-        // Add the token to the authentication url
-        const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + decrypt(oauth.oauth_token);
-        
-        // Set the encrypted oauth_token and encrypted oauth_token_secret cookies
-        res.cookie('oauth_token', oauth.oauth_token);
-        res.cookie('oauth_token_secret', oauth.oauth_token_secret);
-
-        // Render index with the personal oauth_url link on the page
-        res.render('index', { oauthUrl });
-    } catch (error) {
-        console.log({error})
-    } finally {
-        console.log("Goodbye")
+    // console.log({oauth_verifier});
+    const request = {
+        method: 'GET',
+        url: IDENTITY_URL,
+        headers: {
+            "Content-Type" : "application/x-www-form-urlencoded",
+            "Authorization" : '' +
+                `OAuth oauth_consumer_key=\"${api_key}\",` +
+                `oauth_nonce=\"${Date.now()}\",` +
+                `oauth_token=\"${oauth_token}\",` +
+                `oauth_signature=\"${api_secret}&${oauth_secret}\",` +
+                `oauth_signature_method=\"PLAINTEXT\",` +
+                `oauth_timestamp=\"${Date.now()}\",` +
+                `oauth_verifier=\"${oauth_verifier}\"`
+        },
     }
-  })
+    console.log({request});
+    const response = await axios(request);
 
-// the /auth page will send up the verfication code entering page
-// Open up verification code entrance
-// Use the code to set a cookie on the page
-// watch on this page for the cookie's value to change
+    console.log("Sent Authorized(?) request.");
+    return response;
+}
+
+app.get('/', async (req, res) => {
+    const cookies = req.cookies;
+    console.log(cookies);
+    console.log(cookies.oauth_token);
+    if (cookies.oauth_token) {
+        res.render('/identity', {});
+    }
+
+    // if (req.cookie.oauth_token === undefined) {
+    //     res.redirect('/new_user');
+    // }
+ 
+    // Else the app lives here
+    try {
+        // App
+    }
+    catch (error) {
+        // Catch
+    }
+    finally {
+        console.log('Goodbye from /');
+    }
+  });
+
+// the /auth page will send up the verfication code entering page auth.pug
 // fire the post request with the cookie's verifier
 
-// TODO encrypt cookies
-// TODO post to own endpoint
 app.get('/auth', async (req, res) => {
     try {
-        // console.log(req.cookies);
-        // console.log(req.headers);
         if (req.cookies.oauth_token) {
             res.render('auth', {});
         } else {
@@ -214,7 +239,7 @@ app.get('/auth', async (req, res) => {
     } catch (error) {
         console.log({error});
     } finally {
-        console.log("Goodbye from /auth");
+        console.log("Goodbye from /auth GET");
     }
 });
 
@@ -234,17 +259,93 @@ app.post('/auth', async (req, res) => {
             decrypt(req.cookies.oauth_token),
             decrypt(req.cookies.oauth_token_secret),
             req.body.token);
-
+        // data is the axios styled response
         console.log({data, status, statusText});
+        if (status === 200) {
+            console.log("Success! User authorized")
+            res.redirect('/identity');
+        }
     }
     catch (error) {
         // console.log(error);
     }
     finally {
-        console.log("Well we tried ya'll");
+        console.log("Goodbye from /auth POST");
+    }
+});
+
+// Show Collection
+app.get('/identity', async (req, res) => {
+    try {
+        const {data, status, statusText} = await createAuthorizedRequest(
+            DISCOGS_API_KEY,
+            DISCOGS_API_SECRET,
+            decrypt(req.cookies.oauth_token),
+            decrypt(req.cookies.oauth_token_secret),
+            req.body.token);
+            console.log({data, status, statusText});
+            res.render('identity', {});
+    }
+    catch (error) {
+        console.log(error);
+    }
+    finally {
+        console.log("Goodbye from /identity GET");
+    }
+});
+
+// Give a new user an oauth_token and secret cookie
+app.get('/new_user', async (req, res) => {
+    try {
+        // Get oauth_token { oauth_token, oauth_secret }
+        const oauth = await getOauthToken(DISCOGS_API_KEY, DISCOGS_API_SECRET, DISCOGS_OAUTH_REQUEST_TOKEN_URL, callback_url);
+        // Add the token to the authentication url
+        const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + decrypt(oauth.oauth_token);
+        
+        // Set the encrypted oauth_token and encrypted oauth_token_secret cookies
+        res.cookie('oauth_token', oauth.oauth_token);
+        res.cookie('oauth_token_secret', oauth.oauth_token_secret);
+
+        // Render index with the personal oauth_url link on the page
+        res.render('index', { oauthUrl });
+    } catch (error) {
+        console.log({error})
+    } finally {
+        console.log("Goodbye from new_user");
+    }
+});
+
+app.get('/clearCookies', (req, res) => {
+    try {
+        // clear cookie
+        res.clearCookie('oauth_token');
+        res.clearCookie('oauth_token_secret');
+    }
+    catch (error) {
+        console.log(error);
+    }
+    finally {
+        console.log("Cleared Cookies for user.");
     }
 });
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
   })
+
+// Cookie utility function
+function getCookie(cname) {
+    let name = cname + "=";
+    let decodedCookie = decodeURIComponent(document.cookie);
+    let ca = decodedCookie.split(';');
+    for(let i = 0; i <ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) == ' ') {
+        c = c.substring(1);
+      }
+      if (c.indexOf(name) == 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return "";
+  }
