@@ -26053,10 +26053,6 @@ app.use(express.static("public"));
 console.log(path.join(__dirname + "/frontend/views"));
 app.set("views", path.join(__dirname, "/frontend/views"));
 app.set("view engine", "pug");
-app.use((req, res, next) => {
-  const header_value = req.get("Oauth");
-  next();
-});
 async function getOauthToken(api_key, api_secret, oauth_url, callback_url2) {
   const response = await axios.get(oauth_url, {
     headers: {
@@ -26082,28 +26078,37 @@ async function postVerificationToken(api_key, api_secret, oauth_token, oauth_sec
   };
   console.log({ request });
   const response = await axios(request);
-  console.log("Sent Verification awaiting response");
+  console.log("Authorizing User");
   return response;
 }
-async function createAuthorizedRequest(api_key, api_secret, oauth_token, oauth_secret, oauth_verifier) {
+async function getIdentity(api_key, api_secret, oauth_token, oauth_secret, callback_url2) {
   const IDENTITY_URL = "https://api.discogs.com/oauth/identity";
   const request = {
     method: "GET",
     url: IDENTITY_URL,
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "Authorization": `OAuth oauth_consumer_key="${api_key}",oauth_nonce="${Date.now()}",oauth_token="${oauth_token}",oauth_signature="${api_secret}&${oauth_secret}",oauth_signature_method="PLAINTEXT",oauth_timestamp="${Date.now()}",oauth_callback="https://webhook.site/4900d4b0-c58b-4758-90cf-85ff5dbc4330"`
+      "Authorization": `OAuth oauth_consumer_key="${api_key}",oauth_nonce="${Date.now()}",oauth_token="${oauth_token}",oauth_signature="${api_secret}&${oauth_secret}",oauth_signature_method="PLAINTEXT",oauth_timestamp="${Date.now()}",oauth_callback="${callback_url2}"`
     }
   };
   console.log({ request });
   const response = await axios(request);
-  console.log("Sent Authorized(?) request.");
+  console.log("Sent Authorized request.");
   return response;
 }
 app.get("/", async (req, res) => {
   const cookies = req.cookies;
-  if (cookies.oauth_token) {
-    res.render("identity", {});
+  if (cookies.request_token) {
+    res.redirect("/auth");
+  } else if (cookies.oauth_token) {
+    const { data } = await getIdentity(
+      DISCOGS_API_KEY,
+      DISCOGS_API_SECRET,
+      decrypt(req.cookies.oauth_token),
+      decrypt(req.cookies.oauth_token_secret),
+      ""
+    );
+    res.render("identity", { username: data.username });
   } else {
     res.redirect("/new_user");
   }
@@ -26115,7 +26120,7 @@ app.get("/", async (req, res) => {
 });
 app.get("/auth", async (req, res) => {
   try {
-    if (req.cookies.oauth_token) {
+    if (req.cookies.request_token) {
       res.render("auth", {});
     } else {
       res.render("401", {});
@@ -26135,8 +26140,8 @@ app.post("/auth", async (req, res) => {
     const { data, status, statusText } = await postVerificationToken(
       DISCOGS_API_KEY,
       DISCOGS_API_SECRET,
-      decrypt(req.cookies.oauth_token),
-      decrypt(req.cookies.oauth_token_secret),
+      decrypt(req.cookies.request_token),
+      decrypt(req.cookies.request_token_secret),
       req.body.token
     );
     console.log({ data, status, statusText });
@@ -26163,7 +26168,7 @@ app.get("/identity", async (req, res) => {
   }
   try {
     const cb = "/";
-    const { data, status, statusText } = await createAuthorizedRequest(
+    const { data, status, statusText } = await getIdentity(
       DISCOGS_API_KEY,
       DISCOGS_API_SECRET,
       decrypt(req.cookies.oauth_token),
@@ -26171,7 +26176,8 @@ app.get("/identity", async (req, res) => {
       cb
     );
     console.log({ data, status, statusText });
-    res.render("identity", {});
+    res.cookie("username", data.username);
+    res.render("identity", { username: data.username });
   } catch (error) {
     console.log(error);
   } finally {
@@ -26182,8 +26188,8 @@ app.get("/new_user", async (req, res) => {
   try {
     const oauth = await getOauthToken(DISCOGS_API_KEY, DISCOGS_API_SECRET, DISCOGS_OAUTH_REQUEST_TOKEN_URL, callback_url);
     const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + decrypt(oauth.oauth_token);
-    res.cookie("oauth_token", oauth.oauth_token);
-    res.cookie("oauth_token_secret", oauth.oauth_token_secret);
+    res.cookie("request_token", oauth.oauth_token);
+    res.cookie("request_token_secret", oauth.oauth_token_secret);
     res.render("index", { oauthUrl });
   } catch (error) {
     console.log({ error });
@@ -26193,9 +26199,10 @@ app.get("/new_user", async (req, res) => {
 });
 app.get("/clearCookies", (req, res) => {
   try {
-    res.clearCookie("oauth_token");
-    res.clearCookie("oauth_token_secret");
-    console.log(res.cookies);
+    const cookies = req.cookies;
+    for (const cookie in cookies) {
+      res.clearCookie(cookie);
+    }
     res.redirect("/new_user");
   } catch (error) {
     console.log(error);

@@ -95,30 +95,8 @@ app.set('views', path.join(__dirname, '/frontend/views'));
 app.set('view engine', 'pug');
 
 
-// custom middleware to select the desired router based on custom header
-app.use((req, res, next) => {
-
-    // Various Logging for request and req headers
-    // console.log(req);
-    // console.log(req.get("Oauth"));
-    const header_value = req.get("Oauth");
-    //console.log(req.headers);
-
-    // Allows the interepted request to continue
-    next();
-
-    // Logic for changing route on headers
-    // if (appName === "web"
-    //) {
-    //     webRoute(req, res, next);
-    // } else if (appName === "cms") {
-    //     cmsRoute(req, res, next);
-    // } else {
-    //     next();
-    // }
-});
-
 // Get OAuth Token from api.discogs.com
+// Requests and retrieves an initial 'request' Oauth Token from Discogs API
 // Returns encrypted oauth object
 // { oauth_token, oauth_token_secret }
 async function getOauthToken(api_key, api_secret, oauth_url, callback_url) {
@@ -147,8 +125,8 @@ async function getOauthToken(api_key, api_secret, oauth_url, callback_url) {
 }
 
 // POST the now-verified token
+// This function posts a complete set of access request keys to discogs API
 async function postVerificationToken(api_key, api_secret, oauth_token, oauth_secret, oauth_verifier) {
-    // console.log({oauth_verifier});
     const request = {
         method: 'POST',
         url: AUTH_URL,
@@ -167,14 +145,14 @@ async function postVerificationToken(api_key, api_secret, oauth_token, oauth_sec
     console.log({request});
     const response = await axios(request);
 
-    console.log("Sent Verification awaiting response");
+    console.log("Authorizing User");
     return response;
 }
 
 // Test how to create an authorized request on getting a 200 response from 
 // GET https://api.discogs.com/oauth/identity
 // oauth 
-async function createAuthorizedRequest(api_key, api_secret, oauth_token, oauth_secret, oauth_verifier) {
+async function getIdentity(api_key, api_secret, oauth_token, oauth_secret, callback_url) {
     // This is the url but I'd like to create a more basic version of this that accepts a URL arg
     const IDENTITY_URL = 'https://api.discogs.com/oauth/identity';
 
@@ -191,20 +169,30 @@ async function createAuthorizedRequest(api_key, api_secret, oauth_token, oauth_s
                 `oauth_signature=\"${api_secret}&${oauth_secret}\",` +
                 `oauth_signature_method=\"PLAINTEXT\",` +
                 `oauth_timestamp=\"${Date.now()}\",` +
-                `oauth_callback=\"https://webhook.site/4900d4b0-c58b-4758-90cf-85ff5dbc4330\"`
+                `oauth_callback=\"${callback_url}\"`
         },
     }
     console.log({request});
     const response = await axios(request);
 
-    console.log("Sent Authorized(?) request.");
+    console.log("Sent Authorized request.");
     return response;
 }
 
 app.get('/', async (req, res) => {
     const cookies = req.cookies;
-    if (cookies.oauth_token) {
-        res.render('identity', {});
+    if (cookies.request_token) {
+        res.redirect('/auth');
+    } 
+    else if (cookies.oauth_token) {
+        const {data} = await getIdentity(
+            DISCOGS_API_KEY,
+            DISCOGS_API_SECRET,
+            decrypt(req.cookies.oauth_token),
+            decrypt(req.cookies.oauth_token_secret),
+            '');
+
+        res.render('identity', {username: data.username});
     }
     else {
         res.redirect('/new_user');
@@ -227,7 +215,7 @@ app.get('/', async (req, res) => {
 
 app.get('/auth', async (req, res) => {
     try {
-        if (req.cookies.oauth_token) {
+        if (req.cookies.request_token) {
             res.render('auth', {});
         } else {
             res.render('401', {});
@@ -254,8 +242,8 @@ app.post('/auth', async (req, res) => {
         const {data, status, statusText} = await postVerificationToken(
             DISCOGS_API_KEY,
             DISCOGS_API_SECRET,
-            decrypt(req.cookies.oauth_token),
-            decrypt(req.cookies.oauth_token_secret),
+            decrypt(req.cookies.request_token),
+            decrypt(req.cookies.request_token_secret),
             req.body.token);
         // data is the axios styled response
         console.log({data, status, statusText});
@@ -282,7 +270,7 @@ app.post('/auth', async (req, res) => {
     }
 });
 
-// Show Collection
+// Show Identity
 app.get('/identity', async (req, res) => {
     console.log("GET /identity started");
     const cookies = req.cookies;
@@ -290,19 +278,18 @@ app.get('/identity', async (req, res) => {
         res.redirect('/new_user');
     }
 
-
     try {
         const cb = '/';
-        // The "token" here is undefined because it comes from /auth POST
-        // I need to include cb arg
-        const {data, status, statusText} = await createAuthorizedRequest(
+        // Get the identity data
+        const {data, status, statusText} = await getIdentity(
             DISCOGS_API_KEY,
             DISCOGS_API_SECRET,
             decrypt(req.cookies.oauth_token),
             decrypt(req.cookies.oauth_token_secret),
             cb);
         console.log({data, status, statusText});
-        res.render('identity', {});
+        res.cookie('username', data.username);
+        res.render('identity', {username: data.username});
     }
     catch (error) {
         console.log(error);
@@ -312,17 +299,18 @@ app.get('/identity', async (req, res) => {
     }
 });
 
-// Give a new user an oauth_token and secret cookie
+// Give a new user a request oauth_token and secret cookie
 app.get('/new_user', async (req, res) => {
     try {
-        // Get oauth_token { oauth_token, oauth_secret }
+        // Get request_oauth_token { request_oauth_token, request_oauth_secret }
         const oauth = await getOauthToken(DISCOGS_API_KEY, DISCOGS_API_SECRET, DISCOGS_OAUTH_REQUEST_TOKEN_URL, callback_url);
         // Add the token to the authentication url
         const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + decrypt(oauth.oauth_token);
         
+        // THis is a request oauth token, they send me a new one later
         // Set the encrypted oauth_token and encrypted oauth_token_secret cookies
-        res.cookie('oauth_token', oauth.oauth_token);
-        res.cookie('oauth_token_secret', oauth.oauth_token_secret);
+        res.cookie('request_token', oauth.oauth_token);
+        res.cookie('request_token_secret', oauth.oauth_token_secret);
 
         // Render index with the personal oauth_url link on the page
         res.render('index', { oauthUrl });
@@ -335,10 +323,10 @@ app.get('/new_user', async (req, res) => {
 
 app.get('/clearCookies', (req, res) => {
     try {
-        // clear cookie
-        res.clearCookie('oauth_token');
-        res.clearCookie('oauth_token_secret');
-        console.log(res.cookies);
+        const cookies = req.cookies;
+        for (const cookie in cookies) {
+            res.clearCookie(cookie);
+        }
         res.redirect('/new_user');
     }
     catch (error) {
