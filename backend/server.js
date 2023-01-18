@@ -191,7 +191,7 @@ async function createAuthorizedRequest(api_key, api_secret, oauth_token, oauth_s
                 `oauth_signature=\"${api_secret}&${oauth_secret}\",` +
                 `oauth_signature_method=\"PLAINTEXT\",` +
                 `oauth_timestamp=\"${Date.now()}\",` +
-                `oauth_verifier=\"${oauth_verifier}\"`
+                `oauth_callback=\"https://webhook.site/4900d4b0-c58b-4758-90cf-85ff5dbc4330\"`
         },
     }
     console.log({request});
@@ -209,10 +209,6 @@ app.get('/', async (req, res) => {
     else {
         res.redirect('/new_user');
     }
-
-    // if (req.cookie.oauth_token === undefined) {
-    //     res.redirect('/new_user');
-    // }
  
     // Else the app lives here
     try {
@@ -247,6 +243,7 @@ app.get('/auth', async (req, res) => {
 // the /auth page will POST the verification
 app.post('/auth', async (req, res) => {
 
+    // This is intended to come from the /auth page, which creates this token in this manner
     if (!req.body.token) {
         return;
     } else {
@@ -262,6 +259,16 @@ app.post('/auth', async (req, res) => {
             req.body.token);
         // data is the axios styled response
         console.log({data, status, statusText});
+
+        // set new oauth_token and secret from incoming data
+        let [oauth_token, oauth_token_secret] = data.split('&');
+        oauth_token = oauth_token.split('=')[1];
+        oauth_token_secret = oauth_token_secret.split('=')[1];
+        console.log(oauth_token, oauth_token_secret);
+
+        res.cookie('oauth_token', encrypt(oauth_token));
+        res.cookie('oauth_token_secret', encrypt(oauth_token_secret));
+
         if (status === 200) {
             console.log("Success! User authorized")
             res.redirect('/identity');
@@ -277,15 +284,25 @@ app.post('/auth', async (req, res) => {
 
 // Show Collection
 app.get('/identity', async (req, res) => {
+    console.log("GET /identity started");
+    const cookies = req.cookies;
+    if (!cookies.oauth_token || !cookies.oauth_token_secret) {
+        res.redirect('/new_user');
+    }
+
+
     try {
+        const cb = '/';
+        // The "token" here is undefined because it comes from /auth POST
+        // I need to include cb arg
         const {data, status, statusText} = await createAuthorizedRequest(
             DISCOGS_API_KEY,
             DISCOGS_API_SECRET,
             decrypt(req.cookies.oauth_token),
             decrypt(req.cookies.oauth_token_secret),
-            req.body.token);
-            console.log({data, status, statusText});
-            res.render('identity', {});
+            cb);
+        console.log({data, status, statusText});
+        res.render('identity', {});
     }
     catch (error) {
         console.log(error);
@@ -321,6 +338,8 @@ app.get('/clearCookies', (req, res) => {
         // clear cookie
         res.clearCookie('oauth_token');
         res.clearCookie('oauth_token_secret');
+        console.log(res.cookies);
+        res.redirect('/new_user');
     }
     catch (error) {
         console.log(error);

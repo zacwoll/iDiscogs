@@ -26092,7 +26092,7 @@ async function createAuthorizedRequest(api_key, api_secret, oauth_token, oauth_s
     url: IDENTITY_URL,
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "Authorization": `OAuth oauth_consumer_key="${api_key}",oauth_nonce="${Date.now()}",oauth_token="${oauth_token}",oauth_signature="${api_secret}&${oauth_secret}",oauth_signature_method="PLAINTEXT",oauth_timestamp="${Date.now()}",oauth_verifier="${oauth_verifier}"`
+      "Authorization": `OAuth oauth_consumer_key="${api_key}",oauth_nonce="${Date.now()}",oauth_token="${oauth_token}",oauth_signature="${api_secret}&${oauth_secret}",oauth_signature_method="PLAINTEXT",oauth_timestamp="${Date.now()}",oauth_callback="https://webhook.site/4900d4b0-c58b-4758-90cf-85ff5dbc4330"`
     }
   };
   console.log({ request });
@@ -26102,10 +26102,10 @@ async function createAuthorizedRequest(api_key, api_secret, oauth_token, oauth_s
 }
 app.get("/", async (req, res) => {
   const cookies = req.cookies;
-  console.log(cookies);
-  console.log(cookies.oauth_token);
   if (cookies.oauth_token) {
     res.render("identity", {});
+  } else {
+    res.redirect("/new_user");
   }
   try {
   } catch (error) {
@@ -26140,6 +26140,12 @@ app.post("/auth", async (req, res) => {
       req.body.token
     );
     console.log({ data, status, statusText });
+    let [oauth_token, oauth_token_secret] = data.split("&");
+    oauth_token = oauth_token.split("=")[1];
+    oauth_token_secret = oauth_token_secret.split("=")[1];
+    console.log(oauth_token, oauth_token_secret);
+    res.cookie("oauth_token", encrypt(oauth_token));
+    res.cookie("oauth_token_secret", encrypt(oauth_token_secret));
     if (status === 200) {
       console.log("Success! User authorized");
       res.redirect("/identity");
@@ -26150,13 +26156,19 @@ app.post("/auth", async (req, res) => {
   }
 });
 app.get("/identity", async (req, res) => {
+  console.log("GET /identity started");
+  const cookies = req.cookies;
+  if (!cookies.oauth_token || !cookies.oauth_token_secret) {
+    res.redirect("/new_user");
+  }
   try {
+    const cb = "/";
     const { data, status, statusText } = await createAuthorizedRequest(
       DISCOGS_API_KEY,
       DISCOGS_API_SECRET,
       decrypt(req.cookies.oauth_token),
       decrypt(req.cookies.oauth_token_secret),
-      req.body.token
+      cb
     );
     console.log({ data, status, statusText });
     res.render("identity", {});
@@ -26183,6 +26195,8 @@ app.get("/clearCookies", (req, res) => {
   try {
     res.clearCookie("oauth_token");
     res.clearCookie("oauth_token_secret");
+    console.log(res.cookies);
+    res.redirect("/new_user");
   } catch (error) {
     console.log(error);
   } finally {
