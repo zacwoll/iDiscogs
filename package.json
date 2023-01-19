@@ -6,10 +6,10 @@
     "disconnect": "^1.2.2",
     "esbuild": "0.17.2",
     "express": "^4.18.2",
+    "express-fileupload": "^1.4.0",
     "localtunnel": "^2.0.2",
     "pug": "^3.0.2"
   },
-  
   "scripts": {
     "build": "esbuild ./backend/server.js --bundle --outfile=backend.js --platform=node",
     "watch": "esbuild ./backend/server.js --bundle --outdir=frontend --platform=node --watch"
