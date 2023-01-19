@@ -1,5 +1,8 @@
 const express = require('express')
 
+import * as discogs from './discogs';
+import * as my_crypto from './crypto';
+
 // Express options
 const app = express()
 const port = 3000;
@@ -13,71 +16,8 @@ const cookieParser = require('cookie-parser')
 // lets you use the cookieParser in your application
 app.use(cookieParser());
 
-// crypo module
-const crypto = require ("crypto");
 const path = require('path');
-
-const algorithm = "aes-256-cbc";
-
-// generate 16 bytes of random data
-const initVector = crypto.randomBytes(16);
-
-// secret key generate 32 bytes of random data
-const Securitykey = crypto.randomBytes(32);
-
-// the cipher function
-const cipher = crypto.createCipheriv(algorithm, Securitykey, initVector);
-
-// encrypt the message
-// input encoding
-// output encoding
-// let encryptedData = cipher.update(message, "utf-8", "hex");
-
-// Encrypts data given, such as Oauth_token and Oauth_secret
-// Returns web-friendly utf-8 encoded encrypted data
-function encrypt(data) {
-
-
-    // Create Cipher based on file constants
-    let cipher = crypto.createCipheriv(algorithm, Buffer.from(Securitykey), initVector);
-
-    // encrypt the data into the cipher
-    let encrypted = cipher.update(data);
-    // call cipher.final() to close the cipher
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
-    // return the utf-8 encoded encryption
-    return encrypted.toString('hex'); 
-}
-
-// Decrypts data given, assumes data is in utf-8
-// Returns a decrypted string containing data
-function decrypt(encryptedData) {
-
-    let encryptedText = Buffer.from(encryptedData, 'hex');
-
-    // let decodedData = Buffer.from(encryptedData, 'base64', 'hex');
-    // Create a Decipher
-    let decipher = crypto.createDecipheriv(algorithm, Buffer.from(Securitykey), initVector);
-
-    // Give it our encrypted Text
-    let decrypted = decipher.update(encryptedText);
-
-    // Call decipher.final() to close it
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-
-    // return decrypted string
-    return decrypted.toString('utf-8');
-}
-
-
-// Interceptors can intercept axios requests and execute things
 const axios = require('axios').default;
-axios.interceptors.request.use(config => {
-    // log a message before any HTTP request is sent
-    console.log('Request was sent');
-  
-    return config;
-  });
 
 // Discogs API information
 const DISCOGS_API_KEY = 'QmMqPrQDitHQDZpPdyIB';
@@ -90,94 +30,8 @@ const AUTH_URL = 'https://api.discogs.com/oauth/access_token';
 
 // Set up the public assets
 app.use(express.static('public'));
-console.log(path.join(__dirname + '/frontend/views'));
 app.set('views', path.join(__dirname, '/frontend/views'));
 app.set('view engine', 'pug');
-
-
-// Get OAuth Token from api.discogs.com
-// Requests and retrieves an initial 'request' Oauth Token from Discogs API
-// Returns encrypted oauth object
-// { oauth_token, oauth_token_secret }
-async function getOauthToken(api_key, api_secret, oauth_url, callback_url) {
-    const response = await axios.get(oauth_url, {
-        headers: {
-            "Content-Type" : "application/x-www-form-urlencoded",
-            "Authorization" : `OAuth oauth_consumer_key=\"${api_key}\",` +
-                `oauth_nonce=\"${Date.now()}\",` +
-                `oauth_signature=\"${api_secret}&\",` +
-                `oauth_signature_method=\"PLAINTEXT\",` +
-                `oauth_timestamp=\"${Date.now()}\",` +
-                `oauth_callback=\"${callback_url}\"`
-        },
-    })
-
-    let [oauth_token, oauth_token_secret, oauth_callback_confirmed] = response.data.split('&');
-
-    oauth_token = oauth_token.split('=')[1];
-    oauth_token = encrypt(oauth_token);
-
-    oauth_token_secret = oauth_token_secret.split('=')[1];
-    oauth_token_secret = encrypt(oauth_token_secret);
-
-    // Return now encrypted tokens, decrypt as necessary
-    return {oauth_token, oauth_token_secret}
-}
-
-// POST the now-verified token
-// This function posts a complete set of access request keys to discogs API
-async function postVerificationToken(api_key, api_secret, oauth_token, oauth_secret, oauth_verifier) {
-    const request = {
-        method: 'POST',
-        url: AUTH_URL,
-        headers: {
-            "Content-Type" : "application/x-www-form-urlencoded",
-            "Authorization" : '' +
-                `OAuth oauth_consumer_key=\"${api_key}\",` +
-                `oauth_nonce=\"${Date.now()}\",` +
-                `oauth_token=\"${oauth_token}\",` +
-                `oauth_signature=\"${api_secret}&${oauth_secret}\",` +
-                `oauth_signature_method=\"PLAINTEXT\",` +
-                `oauth_timestamp=\"${Date.now()}\",` +
-                `oauth_verifier=\"${oauth_verifier}\"`
-        },
-    }
-    console.log({request});
-    const response = await axios(request);
-
-    console.log("Authorizing User");
-    return response;
-}
-
-// Test how to create an authorized request on getting a 200 response from 
-// GET https://api.discogs.com/oauth/identity
-// oauth 
-async function getIdentity(api_key, api_secret, oauth_token, oauth_secret, callback_url) {
-    // This is the url but I'd like to create a more basic version of this that accepts a URL arg
-    const IDENTITY_URL = 'https://api.discogs.com/oauth/identity';
-
-    // console.log({oauth_verifier});
-    const request = {
-        method: 'GET',
-        url: IDENTITY_URL,
-        headers: {
-            "Content-Type" : "application/x-www-form-urlencoded",
-            "Authorization" : '' +
-                `OAuth oauth_consumer_key=\"${api_key}\",` +
-                `oauth_nonce=\"${Date.now()}\",` +
-                `oauth_token=\"${oauth_token}\",` +
-                `oauth_signature=\"${api_secret}&${oauth_secret}\",` +
-                `oauth_signature_method=\"PLAINTEXT\",` +
-                `oauth_timestamp=\"${Date.now()}\",` +
-                `oauth_callback=\"${callback_url}\"`
-        },
-    }
-    console.log({request});
-    const response = await axios(request);
-
-    console.log("Sent Authorized request.");
-    return response;
-}
 
 app.get('/', async (req, res) => {
     const cookies = req.cookies;
@@ -185,7 +39,7 @@ app.get('/', async (req, res) => {
         res.redirect('/auth');
     } 
     else if (cookies.oauth_token) {
-        const {data} = await getIdentity(
+        const {data} = await discogs.getIdentity(
             DISCOGS_API_KEY,
             DISCOGS_API_SECRET,
             decrypt(req.cookies.oauth_token),
@@ -233,18 +87,21 @@ app.post('/auth', async (req, res) => {
 
     // This is intended to come from the /auth page, which creates this token in this manner
     if (!req.body.token) {
+        console.log('request has no verification token in the body');
         return;
-    } else {
-        // console.log({ verifier: req.body.token});
     }
 
+    const request_token = my_crypto.decrypt(req.cookies.request_token);
+    const request_token_secret = my_crypto.decrypt(req.cookies.request_token_secret);
+    const request_token_verifier = req.body.token;
+
     try {
-        const {data, status, statusText} = await postVerificationToken(
+        const {data, status, statusText} = await discogs.postVerificationToken(
             DISCOGS_API_KEY,
             DISCOGS_API_SECRET,
-            decrypt(req.cookies.request_token),
-            decrypt(req.cookies.request_token_secret),
-            req.body.token);
+            request_token,
+            request_token_secret,
+            request_token_verifier);
         // data is the axios styled response
         console.log({data, status, statusText});
 
@@ -252,18 +109,21 @@ app.post('/auth', async (req, res) => {
         let [oauth_token, oauth_token_secret] = data.split('&');
         oauth_token = oauth_token.split('=')[1];
         oauth_token_secret = oauth_token_secret.split('=')[1];
-        console.log(oauth_token, oauth_token_secret);
 
-        res.cookie('oauth_token', encrypt(oauth_token));
-        res.cookie('oauth_token_secret', encrypt(oauth_token_secret));
+        res.cookie('oauth_token', my_crypto.encrypt(oauth_token));
+        res.cookie('oauth_token_secret', my_crypto.encrypt(oauth_token_secret));
 
         if (status === 200) {
             console.log("Success! User authorized")
+            // Clear the request token
+            res.clearCookie('request_token');
+            res.clearCookie('request_token_secret');
+            // redirect to identity
             res.redirect('/identity');
         }
     }
     catch (error) {
-        // console.log(error);
+        console.log(error);
     }
     finally {
         console.log("Goodbye from /auth POST");
@@ -275,17 +135,21 @@ app.get('/identity', async (req, res) => {
     console.log("GET /identity started");
     const cookies = req.cookies;
     if (!cookies.oauth_token || !cookies.oauth_token_secret) {
-        res.redirect('/new_user');
+        if (!cookies.request_token) {
+            res.redirect('/new_user');
+        } else {
+            res.redirect('/auth');
+        }
     }
 
     try {
         const cb = '/';
         // Get the identity data
-        const {data, status, statusText} = await getIdentity(
+        const {data, status, statusText} = await discogs.getIdentity(
             DISCOGS_API_KEY,
             DISCOGS_API_SECRET,
-            decrypt(req.cookies.oauth_token),
-            decrypt(req.cookies.oauth_token_secret),
+            my_crypto.decrypt(req.cookies.oauth_token),
+            my_crypto.decrypt(req.cookies.oauth_token_secret),
             cb);
         console.log({data, status, statusText});
         res.cookie('username', data.username);
@@ -303,9 +167,9 @@ app.get('/identity', async (req, res) => {
 app.get('/new_user', async (req, res) => {
     try {
         // Get request_oauth_token { request_oauth_token, request_oauth_secret }
-        const oauth = await getOauthToken(DISCOGS_API_KEY, DISCOGS_API_SECRET, DISCOGS_OAUTH_REQUEST_TOKEN_URL, callback_url);
+        const oauth = await discogs.getOauthToken(DISCOGS_API_KEY, DISCOGS_API_SECRET, DISCOGS_OAUTH_REQUEST_TOKEN_URL, callback_url);
         // Add the token to the authentication url
-        const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + decrypt(oauth.oauth_token);
+        const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + my_crypto.decrypt(oauth.oauth_token);
         
         // THis is a request oauth token, they send me a new one later
         // Set the encrypted oauth_token and encrypted oauth_token_secret cookies
