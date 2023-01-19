@@ -3,6 +3,9 @@ html
     title
      | iDiscogs
   body
-    h1
-     | iDiscogs, a vision based interface for Discogs
-     
+    form(role='form' method='POST' action='/upload')
+      fieldset
+        label(for='search') Upload a file:
+        br
+        input(type='file' id='file_upload' )
+      button(type="search") Submit
