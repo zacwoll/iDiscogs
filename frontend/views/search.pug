@@ -1,11 +1,9 @@
-html
-  head
-    title
-     | iDiscogs
-  body
-    form(role='form' method='POST' action='/upload')
-      fieldset
-        label(for='search') Upload a file:
-        br
-        input(type='file' id='file_upload' )
-      button(type="search") Submit
+extends layout 
+
+block content
+  form(role='form' method='POST' action='/upload')
+    fieldset
+      label(for='search') Upload a file:
+      br
+      input(type='file' id='file_upload' )
+    button(type="search") Submit

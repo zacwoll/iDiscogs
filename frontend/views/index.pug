@@ -1,14 +1,10 @@
-html
-  head
-    title
-     | iDiscogs
-  body
-    h1
-     | iDiscogs, a vision based interface for Discogs
-    p 
-     | This is a web-based interface for implementing a record collection on discogs from a collection of physical records.
-     | Upload a picture here and leverage google's vision API to make a guess from the discogs database and take it from there!
-     | First,
-    a(href=oauthUrl) Log into Discogs
-     | .
+extends layout.pug
+    
+block content
+  p 
+    | This is a web-based interface for implementing a record collection on discogs from a collection of physical records.
+    | Upload a picture here and leverage google's vision API to make a guess from the discogs database and take it from there!
+    | First,
+  a(href=oauthUrl) Log into Discogs
+    | .
     

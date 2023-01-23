@@ -1,12 +1,8 @@
+doctype html
 html
-  head
-    title
-     | iDiscogs
+  include includes/head.pug
   body
-    block header
-        h1
-        | iDiscogs, a vision based interface for Discogs
-        h2 
-        | Welcome, #{username}
+    h1
+    | iDiscogs, a vision based interface for Discogs
     block content
     block footer

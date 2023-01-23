@@ -1,11 +1,9 @@
-html
-  head
-    title
-     | iDiscogs
-  body
-    form(role='form' method='POST' action='/auth')
-      fieldset
-        label(for='verification') Input the code here:
-        br
-        input.form-control(type='text', placeholder='verify code' id='token' name='token')
-      button(type="submit") Submit
+extends layout.pug
+
+block content
+  form(role='form' method='POST' action='/auth')
+    fieldset
+      label(for='verification') Input the code here:
+      br
+      input.form-control(type='text', placeholder='verify code' id='token' name='token')
+    button(type="submit") Submit
