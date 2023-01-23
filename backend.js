@@ -26025,7 +26025,7 @@ function encrypt(data) {
   encrypted = Buffer.concat([encrypted, cipher2.final()]);
   return encrypted.toString("hex");
 }
-function decrypt2(encryptedData) {
+function decrypt(encryptedData) {
   let encryptedText = Buffer.from(encryptedData, "hex");
   let decipher = crypto.createDecipheriv(algorithm, Buffer.from(Securitykey), initVector);
   let decrypted = decipher.update(encryptedText);
@@ -26137,8 +26137,8 @@ app.post("/auth", async (req, res) => {
     console.log("request has no verification token in the body");
     return;
   }
-  const request_token = decrypt2(req.cookies.request_token);
-  const request_token_secret = decrypt2(req.cookies.request_token_secret);
+  const request_token = decrypt(req.cookies.request_token);
+  const request_token_secret = decrypt(req.cookies.request_token_secret);
   const request_token_verifier = req.body.token;
   try {
     const { data, status, statusText } = await postVerificationToken(
@@ -26181,8 +26181,8 @@ app.get("/identity", async (req, res) => {
     const { data, status, statusText } = await getIdentity(
       DISCOGS_API_KEY,
       DISCOGS_API_SECRET,
-      decrypt2(req.cookies.oauth_token),
-      decrypt2(req.cookies.oauth_token_secret),
+      decrypt(req.cookies.oauth_token),
+      decrypt(req.cookies.oauth_token_secret),
       cb
     );
     console.log({ data, status, statusText });
@@ -26197,7 +26197,7 @@ app.get("/identity", async (req, res) => {
 app.get("/new_user", async (req, res) => {
   try {
     const oauth = await getOauthToken(DISCOGS_API_KEY, DISCOGS_API_SECRET, DISCOGS_OAUTH_REQUEST_TOKEN_URL, callback_url);
-    const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + decrypt2(oauth.oauth_token);
+    const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + decrypt(oauth.oauth_token);
     res.cookie("request_token", oauth.oauth_token);
     res.cookie("request_token_secret", oauth.oauth_token_secret);
     res.render("index", { oauthUrl });

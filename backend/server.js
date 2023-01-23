@@ -42,8 +42,8 @@ app.get('/', async (req, res) => {
         const {data} = await discogs.getIdentity(
             DISCOGS_API_KEY,
             DISCOGS_API_SECRET,
-            decrypt(req.cookies.oauth_token),
-            decrypt(req.cookies.oauth_token_secret),
+            my_crypto.decrypt(req.cookies.oauth_token),
+            my_crypto.decrypt(req.cookies.oauth_token_secret),
             '');
 
         res.render('identity', {username: data.username});
