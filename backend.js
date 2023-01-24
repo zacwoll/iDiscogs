@@ -26200,7 +26200,7 @@ app.get("/new_user", async (req, res) => {
     const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + decrypt(oauth.oauth_token);
     res.cookie("request_token", oauth.oauth_token);
     res.cookie("request_token_secret", oauth.oauth_token_secret);
-    res.render("index", { oauthUrl });
+    res.render("new_user", { oauthUrl });
   } catch (error) {
     console.log({ error });
   } finally {
