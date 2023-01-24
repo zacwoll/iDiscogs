@@ -64,6 +64,19 @@ app.get('/', async (req, res) => {
     }
   });
 
+  app.post('/upload', async (req, res) => {
+
+    try {
+        
+    }
+    catch (error) {
+        console.log(error);
+    }
+    finally {
+        console.log("Goodbye from /upload POST");
+    }
+});
+
 // the /auth page will send up the verfication code entering page auth.pug
 // fire the post request with the cookie's verifier
 
@@ -177,7 +190,7 @@ app.get('/new_user', async (req, res) => {
         res.cookie('request_token_secret', oauth.oauth_token_secret);
 
         // Render index with the personal oauth_url link on the page
-        res.render('index', { oauthUrl });
+        res.render('new_user', { oauthUrl });
     } catch (error) {
         console.log({error})
     } finally {
