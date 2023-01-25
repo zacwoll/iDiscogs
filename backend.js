@@ -26094,7 +26094,7 @@ var DISCOGS_API_SECRET = "TrPSisogDAvEqrzXlpizykozdMkWWBWO";
 var DISCOGS_OAUTH_REQUEST_TOKEN_URL = "https://api.discogs.com/oauth/request_token";
 var DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL = "https://discogs.com/oauth/authorize?oauth_token=";
 var callback_url = "";
-app.use(express.static("public"));
+app.use(express.static(path2.join(__dirname, "frontend/public")));
 app.set("views", path2.join(__dirname, "/frontend/views"));
 app.set("view engine", "pug");
 app.get("/", async (req, res) => {
@@ -26117,6 +26117,14 @@ app.get("/", async (req, res) => {
   } catch (error) {
   } finally {
     console.log("Goodbye from /");
+  }
+});
+app.post("/upload", async (req, res) => {
+  try {
+  } catch (error) {
+    console.log(error);
+  } finally {
+    console.log("Goodbye from /upload POST");
   }
 });
 app.get("/auth", async (req, res) => {
@@ -26200,7 +26208,7 @@ app.get("/new_user", async (req, res) => {
     const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + decrypt(oauth.oauth_token);
     res.cookie("request_token", oauth.oauth_token);
     res.cookie("request_token_secret", oauth.oauth_token_secret);
-    res.render("new_user", { oauthUrl });
+    res.render("identity");
   } catch (error) {
     console.log({ error });
   } finally {

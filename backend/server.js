@@ -29,7 +29,8 @@ const callback_url = "";
 const AUTH_URL = 'https://api.discogs.com/oauth/access_token';
 
 // Set up the public assets
-app.use(express.static('public'));
+// app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'frontend/public')));
 app.set('views', path.join(__dirname, '/frontend/views'));
 app.set('view engine', 'pug');
 
@@ -190,7 +191,8 @@ app.get('/new_user', async (req, res) => {
         res.cookie('request_token_secret', oauth.oauth_token_secret);
 
         // Render index with the personal oauth_url link on the page
-        res.render('new_user', { oauthUrl });
+        // res.render('new_user', { oauthUrl });
+        res.render('identity');
     } catch (error) {
         console.log({error})
     } finally {

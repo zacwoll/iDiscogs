@@ -1,8 +1,10 @@
 doctype html
 html
   include includes/head.pug
-  body
-    h1
-    | iDiscogs, a vision based interface for Discogs
-    block content
+  body.background
+    nav
+      h1 iDiscogs, a vision based interface for Discogs
+    div.bg-container
+      block content
+  footer
     block footer

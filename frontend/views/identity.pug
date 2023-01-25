@@ -1,9 +1,17 @@
 extends layout.pug
 
 block content
-  form(role='form' method='POST' action='/upload')
-  fieldset
-    label(for='search') Upload a file:
-    br
-    input(type='file' id='file_upload' )
-  button(type="search") Submit
+  .container
+    h1.annotations What Google Sees
+    .img-container
+      img#file_display
+    form(role='form' method='POST' action='/upload')
+    fieldset
+      label(for='search') Upload a file:
+      br
+      input(type='file' id='file_upload' )
+    button(type="search") Submit
+  .container
+    h1.search Discogs Search Engine
+  script
+    include scripts/scripts.js

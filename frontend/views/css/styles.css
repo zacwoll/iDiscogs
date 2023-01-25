@@ -1,0 +1,67 @@
+:root {
+    --primary-color: #E3A864;
+    --secondary-color: #F2D7C0;
+    --primary-black: #040301;
+    --primary-brown: #3B2410;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+nav {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--primary-color);
+}
+
+.bg-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-content: center;
+    align-items: center;
+
+
+    width: 96%;
+    margin: auto;
+    background-color: var(--secondary-color);
+    opacity: 0.9;
+
+    border-radius: 25px;
+    padding: 1%;
+}
+
+.container {
+    background-color: var(--primary-color);
+    opacity: 0.7;
+    padding: 2%;
+    max-width: 96%;
+    border-radius: 12px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    height: 100%;
+}
+
+.img-container {
+    width: 96%;
+}
+
+img {
+    width: 100%;
+    height: 100%;
+}
+
+.background {
+    background-image: url(images/record-player-bg.jpg);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}

@@ -1,16 +1,19 @@
 extends layout.pug
     
 block content
-  p 
-    | This is a web-based interface for implementing a record collection on discogs from a collection of physical records.
-    | Upload a picture here and leverage google's vision API to make a guess from the discogs database and take it from there!
-    | First,
-  a(href=oauthUrl target='_blank') Log into Discogs
-    | .
-  form(role='form' method='POST' action='/auth')
-    fieldset
-      label(for='verification') Input the code here:
-      br
-      input.form-control(type='text', placeholder='verify code' id='token' name='token')
-    button(type="submit") Submit
+  .container
+    p 
+      | This is a web-based interface for implementing a record collection on discogs from a collection of physical records.
+      | Upload a picture here and leverage google's vision API to make a guess from the discogs database and take it from there!
+      | First,
+    a(href=oauthUrl target='_blank') Log into Discogs
+
+  .container
+    p Then, Enter the code from the discogs page here
+    form(role='form' method='POST' action='/auth')
+      fieldset
+        label(for='verification') Input the code here:
+        br
+        input.form-control(type='text', placeholder='verify code' id='token' name='token')
+      button(type="submit") Submit
     
