@@ -71,15 +71,37 @@ export async function postVerificationToken(api_key, api_secret, oauth_token, oa
 // Test how to create an authorized request on getting a 200 response from 
 // GET https://api.discogs.com/oauth/identity
 // oauth 
-export async function getIdentity(api_key, api_secret, oauth_token, oauth_secret, callback_url) {
-    // This is the url but I'd like to create a more basic version of this that accepts a URL arg
+export async function getIdentity(request_config) {
+    // IDENTITY endpoint
     const IDENTITY_URL = 'https://api.discogs.com/oauth/identity';
 
-    // console.log({oauth_verifier});
-    const request = {
-        method: 'GET',
-        url: IDENTITY_URL,
-        headers: {
+    let request = configureRequest('GET', IDENTITY_URL, request_config);
+    const response = await axios(request);
+
+    console.log('Sent Request for Identity');
+    return response;
+}
+
+/*
+    configure an authorized request for discogs, before putting data in it
+    This is a function intended to make easier requests from discogs
+    THis is a premade request with the right headers the first time, not configuring them on the fly
+*/
+export function configureRequest(method, url, config) {
+    let request = {
+        method: method,
+        url: url,
+    }
+    request.headers = configureHeaders(config.api_key, config.api_secret, config.oauth_token, config.oauth_secret, config.callback_url);
+
+    return request;
+}
+
+/*
+    Configure the headers for an authorized request
+*/
+export function configureHeaders(api_key, api_secret, oauth_token, oauth_secret, callback_url) {
+    let headers = {
             "Content-Type" : "application/x-www-form-urlencoded",
             "Authorization" : '' +
                 `OAuth oauth_consumer_key=\"${api_key}\",` +
@@ -89,9 +111,51 @@ export async function getIdentity(api_key, api_secret, oauth_token, oauth_secret
                 `oauth_signature_method=\"PLAINTEXT\",` +
                 `oauth_timestamp=\"${Date.now()}\",` +
                 `oauth_callback=\"${callback_url}\"`
-        },
+        };
+    return headers;
+}
+
+/*
+https://api.discogs.com/database/search?q={query}&
+    \{?
+        type, - [release, master, artist, label]
+        title, 
+        release_title,
+        credit,artist,
+        anv,
+        label,
+        genre,
+        style,
+        country,
+        year,
+        format,
+        catno,
+        barcode,
+        track,
+        submitter,
+        contributor
     }
-    console.log({request});
+ex: https://api.discogs.com/database/search?release_title=nevermind&artist=nirvana&per_page=3&page=1
+*/
+export function generateQueryUrl(prefix, query) {
+    let url = prefix + 'q=' + query.q;
+    for (const [key,value] in Object.entries(query)) {
+        if (k === 'q') continue;
+        url += `&${key}=${value}`; 
+    }
+    return url;
+}
+
+
+export async function search(request_config, query) {
+    // This is the url but I'd like to create a more basic version of this that accepts a URL arg
+    const SEARCH_URL = 'https://api.discogs.com/database/search?';
+
+    const url = generateQueryUrl(SEARCH_URL, query);
+
+    let request = configureRequest('GET', url, request_config);
+
+    console.log(request);
     const response = await axios(request);
 
     console.log("Sent Authorized request.");
