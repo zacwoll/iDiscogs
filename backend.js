@@ -12982,26 +12982,26 @@ var require_axios = __commonJS({
       };
       return instance;
     }
-    var axios3 = createInstance(defaults$1);
-    axios3.Axios = Axios$1;
-    axios3.CanceledError = CanceledError;
-    axios3.CancelToken = CancelToken$1;
-    axios3.isCancel = isCancel;
-    axios3.VERSION = VERSION;
-    axios3.toFormData = toFormData;
-    axios3.AxiosError = AxiosError;
-    axios3.Cancel = axios3.CanceledError;
-    axios3.all = function all(promises) {
+    var axios4 = createInstance(defaults$1);
+    axios4.Axios = Axios$1;
+    axios4.CanceledError = CanceledError;
+    axios4.CancelToken = CancelToken$1;
+    axios4.isCancel = isCancel;
+    axios4.VERSION = VERSION;
+    axios4.toFormData = toFormData;
+    axios4.AxiosError = AxiosError;
+    axios4.Cancel = axios4.CanceledError;
+    axios4.all = function all(promises) {
       return Promise.all(promises);
     };
-    axios3.spread = spread;
-    axios3.isAxiosError = isAxiosError;
-    axios3.mergeConfig = mergeConfig;
-    axios3.AxiosHeaders = AxiosHeaders$1;
-    axios3.formToJSON = (thing) => formDataToJSON(utils.isHTMLForm(thing) ? new FormData(thing) : thing);
-    axios3.HttpStatusCode = HttpStatusCode$1;
-    axios3.default = axios3;
-    module2.exports = axios3;
+    axios4.spread = spread;
+    axios4.isAxiosError = isAxiosError;
+    axios4.mergeConfig = mergeConfig;
+    axios4.AxiosHeaders = AxiosHeaders$1;
+    axios4.formToJSON = (thing) => formDataToJSON(utils.isHTMLForm(thing) ? new FormData(thing) : thing);
+    axios4.HttpStatusCode = HttpStatusCode$1;
+    axios4.default = axios4;
+    module2.exports = axios4;
   }
 });
 
@@ -26080,15 +26080,40 @@ async function getIdentity(api_key, api_secret, oauth_token, oauth_secret, callb
   return response;
 }
 
+// backend/google.js
+var axios2 = require_axios().default;
+var gcp_api_url = "https://vision.googleapis.com/v1/images:annotate?";
+var GCP_API_KEY = "AIzaSyDyQN2rdDE9UUj3uIrgbfLROFuL9L--0fE";
+async function getAnnotation(imageData) {
+  const response = await axios2.post(gcp_api_url + "key=" + GCP_API_KEY, {
+    "requests": [
+      {
+        "image": {
+          content: imageData
+        },
+        "features": [
+          {
+            "type": "WEB_DETECTION",
+            "maxResults": 1
+          }
+        ]
+      }
+    ]
+  });
+  const data = response.data.responses[0].webDetection;
+  console.log(data);
+  return data;
+}
+
 // backend/server.js
 var express = require_express2();
 var app = express();
 var port = 3e3;
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ limit: "50mb", extended: false }));
 var cookieParser = require_cookie_parser();
 app.use(cookieParser());
 var path2 = require("path");
-var axios2 = require_axios().default;
+var axios3 = require_axios().default;
 var DISCOGS_API_KEY = "QmMqPrQDitHQDZpPdyIB";
 var DISCOGS_API_SECRET = "TrPSisogDAvEqrzXlpizykozdMkWWBWO";
 var DISCOGS_OAUTH_REQUEST_TOKEN_URL = "https://api.discogs.com/oauth/request_token";
@@ -26119,8 +26144,15 @@ app.get("/", async (req, res) => {
     console.log("Goodbye from /");
   }
 });
-app.post("/upload", async (req, res) => {
+app.post("/requestAnnotation", async (req, res) => {
+  const fileData = req.body.data.substring(23);
+  if (!req.body) {
+    console.log("missing Data");
+  }
   try {
+    const annotation = await getAnnotation(fileData);
+    console.log(JSON.stringify(annotation, null, 2));
+    res.send({ annotation });
   } catch (error) {
     console.log(error);
   } finally {

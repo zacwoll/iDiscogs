@@ -5,33 +5,6 @@ const post_url = 'https://jsonplaceholder.typicode.com/posts';
 const gcp_api_url = 'https://vision.googleapis.com/v1/images:annotate?';
 const GCP_API_KEY = 'AIzaSyDyQN2rdDE9UUj3uIrgbfLROFuL9L--0fE';
 
-// // Make a request for a user with a given ID
-// axios.get(url)
-//   .then(function (response) {
-//     // handle success
-//     console.log(response.data);
-//   })
-//   .catch(function (error) {
-//     // handle error
-//     console.log(error);
-//   })
-//   .then(function () {
-//     // always executed
-//   });
-
-// // Make a post request for a given user
-// axios.post(post_url, {
-//         title: 'foo',
-//         body: 'bar',
-//         userId: 1
-//     })
-//   .then(function (response) {
-//     console.log(response);
-//   })
-//   .catch(function (error) {
-//     console.log(error);
-//   });
-
 const fs = require('fs');
 
 // function to encode file data to base64 encoded string
@@ -43,7 +16,11 @@ function b64req(file) {
 }
 
 // console.log(b64req('./test.jpg'));
-const imageData = b64req('./test2.jpg');
+const imageData = b64req('test/test.jpg');
+console.log(imageData.substring(0, 10));
+
+// const gcp_api_url = 'https://vision.googleapis.com/v1/images:annotate?';
+// const GCP_API_KEY = 'AIzaSyDyQN2rdDE9UUj3uIrgbfLROFuL9L--0fE';
 
 axios.post(gcp_api_url + 'key=' + GCP_API_KEY, {
     "requests":[
