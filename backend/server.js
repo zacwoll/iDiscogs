@@ -2,13 +2,15 @@ const express = require('express')
 
 import * as discogs from './discogs';
 import * as my_crypto from './crypto';
+import * as google from './google';
+import { send } from 'process';
 
 // Express options
 const app = express()
 const port = 3000;
 
 // Allows body parsing
-app.use(express.urlencoded({extended: false}));
+app.use(express.urlencoded({limit: '50mb', extended: false}));
 
 // Allows cookies to be understood by the server
 const cookieParser = require('cookie-parser')
@@ -65,10 +67,20 @@ app.get('/', async (req, res) => {
     }
   });
 
-  app.post('/upload', async (req, res) => {
+  app.post('/requestAnnotation', async (req, res) => {
+    // console.log(req.body);
+    // 
+    const fileData = req.body.data.substring(23);
+
+    if (!req.body) {
+        console.log('missing Data');
+    }
 
     try {
-        
+        // make google request
+        const annotation = await google.getAnnotation(fileData);
+        console.log(JSON.stringify(annotation, null, 2));
+        res.send({annotation});
     }
     catch (error) {
         console.log(error);
