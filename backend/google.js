@@ -22,6 +22,6 @@ export async function getAnnotation(imageData) {
     });
 
     const data = response.data.responses[0].webDetection;
-    console.log(data);
+    // console.log(data);
     return data;
 }

@@ -2,9 +2,9 @@ extends layout.pug
 
 block content
   .container
-    h1.annotations What Google Sees
+    h1#annotation_header What Google Sees
     .img-container
-      img#file_display
+      img#file_display(display='none')
     form(role='form' method='POST' action='/requestAnnotation')
     fieldset
       label(for='search') Upload a file:

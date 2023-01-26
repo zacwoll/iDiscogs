@@ -79,7 +79,7 @@ app.get('/', async (req, res) => {
     try {
         // make google request
         const annotation = await google.getAnnotation(fileData);
-        console.log(JSON.stringify(annotation, null, 2));
+        // console.log(JSON.stringify(annotation, null, 2));
         res.send({annotation});
     }
     catch (error) {
@@ -170,13 +170,16 @@ app.get('/identity', async (req, res) => {
 
     try {
         const cb = '/';
+        const request_config = {
+            api_key: DISCOGS_API_KEY,
+            api_secret: DISCOGS_API_SECRET,
+            oauth_token: my_crypto.decrypt(req.cookies.oauth_token),
+            oauth_secret: my_crypto.decrypt(req.cookies.oauth_token_secret),
+            cb,
+        }
         // Get the identity data
-        const {data, status, statusText} = await discogs.getIdentity(
-            DISCOGS_API_KEY,
-            DISCOGS_API_SECRET,
-            my_crypto.decrypt(req.cookies.oauth_token),
-            my_crypto.decrypt(req.cookies.oauth_token_secret),
-            cb);
+        const {data, status, statusText} = await discogs.getIdentity(request_config);
+
         console.log({data, status, statusText});
         res.cookie('username', data.username);
         res.render('identity', {username: data.username});
@@ -203,8 +206,9 @@ app.get('/new_user', async (req, res) => {
         res.cookie('request_token_secret', oauth.oauth_token_secret);
 
         // Render index with the personal oauth_url link on the page
-        // res.render('new_user', { oauthUrl });
-        res.render('identity');
+        res.render('new_user', { oauthUrl });
+        // ENTRY POINT TEST
+        // res.render('identity');
     } catch (error) {
         console.log({error})
     } finally {
