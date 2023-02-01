@@ -147,6 +147,7 @@ export function generateQueryUrl(prefix, query) {
       return url;
 }
 
+// Oauth_token & Oauth_token_secret
 export async function search(request_config, query) {
     // This is the url but I'd like to create a more basic version of this that accepts a URL arg
     const SEARCH_URL = 'https://api.discogs.com/database/search?';

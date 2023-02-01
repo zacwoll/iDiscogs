@@ -2,6 +2,13 @@ const input = document.getElementById("file_upload");
 const display = document.getElementById("file_display");
 const annotation_header = document.getElementById('annotation_header');
 
+const form = document.getElementById('form-container');
+const inputs = form.getElementsByTagName('input');
+
+
+/** convertBase64
+ * Converts data from uploaded file to base64 to send to Google
+ */
 const convertBase64 = (file) => {
     return new Promise((resolve, reject) => {
         const fileReader = new FileReader();
@@ -17,6 +24,9 @@ const convertBase64 = (file) => {
     });
 };
 
+/* getAnnotations
+ * Gets Annotations from Google
+ */
 const getAnnotations = async (fileData) => {
     const request = {
         method: 'POST',
@@ -24,6 +34,22 @@ const getAnnotations = async (fileData) => {
         data: {
             data: fileData
         },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    }
+    const {data} = await axios(request);
+    return data;
+}
+
+/* getDiscogsResults
+ * Gets paginated results from discogs
+ */
+const getDiscogsResults = async (query) => {
+    const request = {
+        method: 'POST',
+        url: '/search',
+        data: { query },
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -43,12 +69,31 @@ const uploadImage = async (event) => {
     display.style.display = 'block';
     // Get Annotation Data
     const data = await getAnnotations(base64);
+    const bestGuess = data.annotation.bestGuessLabels[0].label;
     console.log(data.annotation.bestGuessLabels);
 
-    annotation_header.innerText = data.annotation.bestGuessLabels[0].label;
+    // Change What Google Says
+    annotation_header.innerText = bestGuess;
+    search_box.value = bestGuess;
+    console.log(getDiscogsResults(createQuery()));
+
+    // Place query in the form
 };
 
+const createQuery = () => {
+    let query = {};
+    Array.from(inputs).forEach((i) => {
+        query[i.name] = i.value;
+    });
+    console.log(query);
+    return JSON.stringify(query);
+}
 
+const clearForm = () => {
+    Array.from(inputs).forEach((i) => {
+        i.value = '';
+    });
+}
 
 input.addEventListener("change", (e) => {
     uploadImage(e);

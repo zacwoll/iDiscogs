@@ -42,10 +42,10 @@ app.get('/', async (req, res) => {
         res.redirect('/auth');
     } 
     else if (cookies.oauth_token) {
-        const {data} = await discogs.getIdentity(
-            crypto.decrypt(req.cookies.oauth_token),
-            crypto.decrypt(req.cookies.oauth_token_secret)
-            );
+        const {data} = await discogs.getIdentity({
+            oauth_token: crypto.decrypt(req.cookies.oauth_token),
+            oauth_token_secret: crypto.decrypt(req.cookies.oauth_token_secret)
+        });
 
         res.render('identity', {username: data.username});
     }
@@ -79,6 +79,35 @@ app.get('/', async (req, res) => {
         const annotation = await google.getAnnotation(fileData);
         // console.log(JSON.stringify(annotation, null, 2));
         res.send({annotation});
+    }
+    catch (error) {
+        console.log(error);
+    }
+    finally {
+        console.log("Goodbye from /upload POST");
+    }
+});
+
+app.post('/search', async (req, res) => {
+    console.log('Hello from /search');
+    // console.log(req.body);
+    //
+    const query = req.body;
+    console.log(query);
+
+    if (!req.body) {
+        console.log('missing Data');
+    }
+
+    try {
+        const request_config = {
+            oauth_token: crypto.decrypt(req.cookies.oauth_token),
+            oauth_secret: crypto.decrypt(req.cookies.oauth_token_secret),
+        }
+        // make google request
+        const results = await discogs.search(request_config, query);
+        console.log(results);
+        // res.send({results});
     }
     catch (error) {
         console.log(error);

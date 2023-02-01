@@ -20783,14 +20783,14 @@ var require_parseurl = __commonJS({
       }
       var pathname = str;
       var query = null;
-      var search = null;
+      var search2 = null;
       for (var i = 1; i < str.length; i++) {
         switch (str.charCodeAt(i)) {
           case 63:
-            if (search === null) {
+            if (search2 === null) {
               pathname = str.substring(0, i);
               query = str.substring(i + 1);
-              search = str.substring(i);
+              search2 = str.substring(i);
             }
             break;
           case 9:
@@ -20808,9 +20808,9 @@ var require_parseurl = __commonJS({
       url2.path = str;
       url2.href = str;
       url2.pathname = pathname;
-      if (search !== null) {
+      if (search2 !== null) {
         url2.query = query;
-        url2.search = search;
+        url2.search = search2;
       }
       return url2;
     }
@@ -26262,6 +26262,26 @@ function configureHeaders(oauth_token, oauth_secret) {
   };
   return headers;
 }
+function generateQueryUrl(prefix, query) {
+  let url = prefix + "q=" + query.query;
+  for (const [key2, value] of Object.entries(query)) {
+    if (key2 != "query") {
+      if (value !== "") {
+        url += `&${key2}=${value}`;
+      }
+    }
+  }
+  return url;
+}
+async function search(request_config, query) {
+  const SEARCH_URL = "https://api.discogs.com/database/search?";
+  const url = generateQueryUrl(SEARCH_URL, query);
+  let request = configureRequest("GET", url, request_config);
+  console.log(request);
+  const response = await axios(request);
+  console.log("Sent Authorized request.");
+  return response;
+}
 
 // backend/google.js
 var axios2 = require_axios().default;
@@ -26307,10 +26327,10 @@ app.get("/", async (req, res) => {
   if (cookies.request_token) {
     res.redirect("/auth");
   } else if (cookies.oauth_token) {
-    const { data } = await getIdentity(
-      decrypt(req.cookies.oauth_token),
-      decrypt(req.cookies.oauth_token_secret)
-    );
+    const { data } = await getIdentity({
+      oauth_token: decrypt(req.cookies.oauth_token),
+      oauth_token_secret: decrypt(req.cookies.oauth_token_secret)
+    });
     res.render("identity", { username: data.username });
   } else {
     res.redirect("/new_user");
@@ -26329,6 +26349,26 @@ app.post("/requestAnnotation", async (req, res) => {
   try {
     const annotation = await getAnnotation(fileData);
     res.send({ annotation });
+  } catch (error) {
+    console.log(error);
+  } finally {
+    console.log("Goodbye from /upload POST");
+  }
+});
+app.post("/search", async (req, res) => {
+  console.log("Hello from /search");
+  const query = req.body;
+  console.log(query);
+  if (!req.body) {
+    console.log("missing Data");
+  }
+  try {
+    const request_config = {
+      oauth_token: decrypt(req.cookies.oauth_token),
+      oauth_secret: decrypt(req.cookies.oauth_token_secret)
+    };
+    const results = await search(request_config, query);
+    console.log(results);
   } catch (error) {
     console.log(error);
   } finally {
