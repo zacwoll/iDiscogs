@@ -12,7 +12,8 @@ block content
       input(type='file' id='file_upload' name='file_upload' placeholder='upload here')
     button.file_submit(type="submit") Submit
   .container
-    h1.search Discogs Search Engine
+    include includes/discogsSearchForm.pug
+
   script
     include scripts/scripts.js
   script(src='https://unpkg.com/axios/dist/axios.min.js')

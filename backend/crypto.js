@@ -1,18 +1,11 @@
+require('dotenv').config()
+
 // crypto module
 const crypto = require ("crypto");
-const path = require('path');
 
 const algorithm = "aes-256-cbc";
-
-// generate 16 bytes of random data
-const initVector = crypto.randomBytes(16);
-
-// TODO Turn the secret into an environment variable
-// secret key generate 32 bytes of random data
-const Securitykey = crypto.randomBytes(32);
-
-// the cipher function
-const cipher = crypto.createCipheriv(algorithm, Securitykey, initVector);
+const key = Buffer.from(process.env.SECURITY_KEY, 'hex');
+const iv = Buffer.from(process.env.SECURITY_IV, 'hex');
 
 // encrypt the message
 // input encoding
@@ -20,18 +13,17 @@ const cipher = crypto.createCipheriv(algorithm, Securitykey, initVector);
 // let encryptedData = cipher.update(message, "utf-8", "hex");
 
 // Encrypts data given, such as Oauth_token and Oauth_secret
-// Returns web-friendly utf-8 encoded encrypted data
+// Returns web-friendly utf-8 encoded encrypted data object
 export function encrypt(data) {
-
+    // let bsiv = crypto.randomBytes(16).toString('hex');
     // Create Cipher based on file constants
-    let cipher = crypto.createCipheriv(algorithm, Buffer.from(Securitykey), initVector);
+    let cipher = crypto.createCipheriv(algorithm, key, iv);
 
     // encrypt the data into the cipher
     let encrypted = cipher.update(data);
     // call cipher.final() to close the cipher
     encrypted = Buffer.concat([encrypted, cipher.final()]);
-    // return the utf-8 encoded encryption
-    return encrypted.toString('hex'); 
+    return { data: encrypted.toString('hex') }
 }
 
 // Decrypts data given, assumes data is in utf-8
@@ -42,7 +34,7 @@ export function decrypt(encryptedData) {
 
     // let decodedData = Buffer.from(encryptedData, 'base64', 'hex');
     // Create a Decipher
-    let decipher = crypto.createDecipheriv(algorithm, Buffer.from(Securitykey), initVector);
+    let decipher = crypto.createDecipheriv(algorithm, Buffer.from(key), iv);
 
     // Give it our encrypted Text
     let decrypted = decipher.update(encryptedText);

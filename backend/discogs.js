@@ -1,43 +1,41 @@
+require('dotenv').config()
+
 // imports
 const axios = require('axios').default;
 import * as crypto from './crypto';
 
 // Discogs API information
 // API AND API SECRET will come in through a .env file
-const DISCOGS_API_KEY = 'QmMqPrQDitHQDZpPdyIB';
-const DISCOGS_API_SECRET = 'TrPSisogDAvEqrzXlpizykozdMkWWBWO';
+const DISCOGS_API_KEY = process.env.DISCOGS_API_KEY;
+const DISCOGS_API_SECRET = process.env.DISCOGS_API_SECRET;
 
-// These are URLS that are important to the discogs ecosystem
-const DISCOGS_OAUTH_REQUEST_TOKEN_URL = 'https://api.discogs.com/oauth/request_token';
-const DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL = 'https://discogs.com/oauth/authorize?oauth_token='
 const DISCOGS_OAUTH_POST_URL = 'https://api.discogs.com/oauth/access_token';
-
-const callback_url = "";
+const callback_url = process.env.callback_url;
 
 // Get OAuth Token from api.discogs.com
 // Requests and retrieves an initial 'request' Oauth Token from Discogs API
 // Returns encrypted oauth object
 // { oauth_token, oauth_token_secret }
-export async function getOauthToken(api_key, api_secret, oauth_url, callback_url) {
+export async function getOauthToken(oauth_url) {
     const response = await axios.get(oauth_url, {
         headers: {
             "Content-Type" : "application/x-www-form-urlencoded",
-            "Authorization" : `OAuth oauth_consumer_key=\"${api_key}\",` +
+            "Authorization" : `OAuth oauth_consumer_key=\"${DISCOGS_API_KEY}\",` +
                 `oauth_nonce=\"${Date.now()}\",` +
-                `oauth_signature=\"${api_secret}&\",` +
+                `oauth_signature=\"${DISCOGS_API_SECRET}&\",` +
                 `oauth_signature_method=\"PLAINTEXT\",` +
                 `oauth_timestamp=\"${Date.now()}\",` +
                 `oauth_callback=\"${callback_url}\"`
         },
     })
 
-    let [oauth_token, oauth_token_secret, oauth_callback_confirmed] = response.data.split('&');
+    let [oauth_token, oauth_token_secret] = response.data.split('&');
 
     oauth_token = oauth_token.split('=')[1];
-    oauth_token = crypto.encrypt(oauth_token);
+    oauth_token = crypto.encrypt(oauth_token).data;
 
     oauth_token_secret = oauth_token_secret.split('=')[1];
-    oauth_token_secret = crypto.encrypt(oauth_token_secret);
+    oauth_token_secret = crypto.encrypt(oauth_token_secret).data;
 
     // Return now encrypted tokens, decrypt as necessary
     return {oauth_token, oauth_token_secret}
@@ -45,17 +43,17 @@ export async function getOauthToken(api_key, api_secret, oauth_url, callback_url
 
 // POST the now-verified token
 // This function posts a complete set of access request keys to discogs API
-export async function postVerificationToken(api_key, api_secret, oauth_token, oauth_secret, oauth_verifier) {
+export async function postVerificationToken(oauth_token, oauth_secret, oauth_verifier) {
     const request = {
         method: 'POST',
         url: DISCOGS_OAUTH_POST_URL,
         headers: {
             "Content-Type" : "application/x-www-form-urlencoded",
             "Authorization" : '' +
-                `OAuth oauth_consumer_key=\"${api_key}\",` +
+                `OAuth oauth_consumer_key=\"${DISCOGS_API_KEY}\",` +
                 `oauth_nonce=\"${Date.now()}\",` +
                 `oauth_token=\"${oauth_token}\",` +
-                `oauth_signature=\"${api_secret}&${oauth_secret}\",` +
+                `oauth_signature=\"${DISCOGS_API_SECRET}&${oauth_secret}\",` +
                 `oauth_signature_method=\"PLAINTEXT\",` +
                 `oauth_timestamp=\"${Date.now()}\",` +
                 `oauth_verifier=\"${oauth_verifier}\"`
@@ -92,7 +90,7 @@ export function configureRequest(method, url, config) {
         method: method,
         url: url,
     }
-    request.headers = configureHeaders(config.api_key, config.api_secret, config.oauth_token, config.oauth_secret, config.callback_url);
+    request.headers = configureHeaders(config.oauth_token, config.oauth_secret);
 
     return request;
 }
@@ -100,14 +98,14 @@ export function configureRequest(method, url, config) {
 /*
     Configure the headers for an authorized request
 */
-export function configureHeaders(api_key, api_secret, oauth_token, oauth_secret, callback_url) {
+export function configureHeaders(oauth_token, oauth_secret) {
     let headers = {
             "Content-Type" : "application/x-www-form-urlencoded",
             "Authorization" : '' +
-                `OAuth oauth_consumer_key=\"${api_key}\",` +
+                `OAuth oauth_consumer_key=\"${DISCOGS_API_KEY}\",` +
                 `oauth_nonce=\"${Date.now()}\",` +
                 `oauth_token=\"${oauth_token}\",` +
-                `oauth_signature=\"${api_secret}&${oauth_secret}\",` +
+                `oauth_signature=\"${DISCOGS_API_SECRET}&${oauth_secret}\",` +
                 `oauth_signature_method=\"PLAINTEXT\",` +
                 `oauth_timestamp=\"${Date.now()}\",` +
                 `oauth_callback=\"${callback_url}\"`
@@ -138,14 +136,16 @@ https://api.discogs.com/database/search?q={query}&
 ex: https://api.discogs.com/database/search?release_title=nevermind&artist=nirvana&per_page=3&page=1
 */
 export function generateQueryUrl(prefix, query) {
-    let url = prefix + 'q=' + query.q;
-    for (const [key,value] in Object.entries(query)) {
-        if (k === 'q') continue;
-        url += `&${key}=${value}`; 
-    }
-    return url;
+    let url = prefix + 'q=' + query.query;
+    for (const [key, value] of Object.entries(query)) {
+        if (key != 'query') {
+            if (value !== '') {
+                url += `&${key}=${value}`;
+            }
+        }
+      }
+      return url;
 }
-
 
 export async function search(request_config, query) {
     // This is the url but I'd like to create a more basic version of this that accepts a URL arg

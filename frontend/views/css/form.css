@@ -1,0 +1,154 @@
+
+  /* Basic form
+    ============================= */
+
+    :root {
+        --color-border: #3B2410;
+        --primary-color: #E3A864;
+        --secondary-color: #F2D7C0;
+        --primary-black: #040301;
+        --primary-brown: #3B2410;
+
+        --color-white: white;
+        --color-grey: #a0a0a0;
+        --color-light-grey: #f3f3f3;
+        --color-dark-grey: #353535;
+        --color-error: #cd3e65;
+        --color-valid: #08805b;
+    }
+  
+    form {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+      }
+    
+      fieldset {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        border: none;
+      }
+
+      .label-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        width: 100%;
+        padding: .5rem 1rem;
+      }
+
+      label {
+        cursor: pointer;
+        display: block;
+        white-space: nowrap;
+        font-size: 1.4rem;
+        text-align: right;
+        padding-right: 4%;
+      }
+
+      .search-bar {
+        grid-template-columns: 8fr 1fr;
+        display: grid;
+      }
+
+      .search-bar button {
+        height: 100%;
+        width: 100%;
+      }
+    
+      input[type="text"], select, textarea {
+        width: 100%;
+        padding: 5%;
+        line-height: 1;
+        border: .1rem solid var(--color-border);
+        background-color: var(--secondary-color);
+        box-shadow: none;
+        outline: 0;
+      }
+
+      input[type="text"]:focus, input[type="email"]:focus, textarea:focus {
+        border: .1rem solid var(--color-grey);
+        background-color: var(--color-light-grey);
+      }
+    
+      ::placeholder {
+        font-style: italic;
+        font-size: var(--font-size-small);
+      }
+
+      /* Form group
+    ============================= */
+    
+    .label-container {
+      padding: 1rem;
+      margin: 0;
+    }
+    
+    .label-container:focus-within {
+      background-color: var(--color-light-grey);
+      transition: .3s;
+    }
+    
+    /* Form help
+    ============================= */
+    
+    .form-group .form-help {
+      margin: 0;
+      line-height: 1.3;
+      letter-spacing: 0.019rem;
+      color: var(--color-dark-grey);
+      font-size: var(--font-size-small);
+      max-height: 0;
+      transition: 0.3s;
+      overflow: hidden; 
+    }
+    
+    .form-group:focus-within .form-help {
+      max-height: 20rem;
+      margin: .4rem 0 0;
+    }
+    
+    /* Form error handling
+    ============================= */
+    
+    /* The following code is used to place the icon in the after pseudo element. Because after and before are not possible in an input, we need to use a span that will be positioned on the right of our input. */
+    
+    input:not(:placeholder-shown) ~ .form-field-icon::after {
+      height: 100%;
+      right: 0;
+      pointer-events: none;
+      position: absolute;
+      top: 0;
+      width: 1.3em;
+    }
+    
+    /* Because inputs are invalid by default, we need to be careful and show the icon when we are not in focus and when when the input is not empty (placeholder-shown). Careful with this one because it is not supported everywhere. */
+    
+    input:required:invalid:not(:focus):not(:placeholder-shown) ~ .form-field-icon::after {
+      content: '✘';
+      color: var(--color-error);
+    }
+    
+    input:required:valid ~ .form-field-icon::after {
+      content: '✔';
+      color: var(--color-valid);
+    }
+    
+    /* We want to hide the helper text when we are not in focus. The tilte allows us to select a sibling element in CSS */
+    
+    input:required:valid ~ .form-help {
+      max-height: 0;
+    }
+    
+    /* Showing a border in a different color is good but not enough. For accessibility purposes, we added an icon when the input is valid or invalid to have a visual distinction that is not only color based.*/
+    
+    input:required:invalid:not(:focus):not(:placeholder-shown),
+    textarea:invalid:not(:focus):not(:placeholder-shown) {
+      border: 0.1rem solid var(--color-error);
+    }
+    
+    input:required:valid:not(:placeholder-shown),
+    textarea:valid:not(:placeholder-shown) {
+      border: 0.1rem solid var(--color-valid);
+    }

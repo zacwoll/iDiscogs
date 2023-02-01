@@ -1,7 +1,10 @@
+import * as dotenv from 'dotenv'
+dotenv.config()
+
 const express = require('express')
 
 import * as discogs from './discogs';
-import * as my_crypto from './crypto';
+import * as crypto from './crypto';
 import * as google from './google';
 import { send } from 'process';
 
@@ -22,11 +25,8 @@ const path = require('path');
 const axios = require('axios').default;
 
 // Discogs API information
-const DISCOGS_API_KEY = 'QmMqPrQDitHQDZpPdyIB';
-const DISCOGS_API_SECRET = 'TrPSisogDAvEqrzXlpizykozdMkWWBWO';
 const DISCOGS_OAUTH_REQUEST_TOKEN_URL = 'https://api.discogs.com/oauth/request_token';
 const DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL = 'https://discogs.com/oauth/authorize?oauth_token='
-const callback_url = "";
 
 const AUTH_URL = 'https://api.discogs.com/oauth/access_token';
 
@@ -43,11 +43,9 @@ app.get('/', async (req, res) => {
     } 
     else if (cookies.oauth_token) {
         const {data} = await discogs.getIdentity(
-            DISCOGS_API_KEY,
-            DISCOGS_API_SECRET,
-            my_crypto.decrypt(req.cookies.oauth_token),
-            my_crypto.decrypt(req.cookies.oauth_token_secret),
-            '');
+            crypto.decrypt(req.cookies.oauth_token),
+            crypto.decrypt(req.cookies.oauth_token_secret)
+            );
 
         res.render('identity', {username: data.username});
     }
@@ -117,14 +115,12 @@ app.post('/auth', async (req, res) => {
         return;
     }
 
-    const request_token = my_crypto.decrypt(req.cookies.request_token);
-    const request_token_secret = my_crypto.decrypt(req.cookies.request_token_secret);
+    const request_token = crypto.decrypt(req.cookies.request_token);
+    const request_token_secret = crypto.decrypt(req.cookies.request_token_secret);
     const request_token_verifier = req.body.token;
 
     try {
         const {data, status, statusText} = await discogs.postVerificationToken(
-            DISCOGS_API_KEY,
-            DISCOGS_API_SECRET,
             request_token,
             request_token_secret,
             request_token_verifier);
@@ -136,8 +132,11 @@ app.post('/auth', async (req, res) => {
         oauth_token = oauth_token.split('=')[1];
         oauth_token_secret = oauth_token_secret.split('=')[1];
 
-        res.cookie('oauth_token', my_crypto.encrypt(oauth_token));
-        res.cookie('oauth_token_secret', my_crypto.encrypt(oauth_token_secret));
+        oauth_token = crypto.encrypt(oauth_token).data;
+        res.cookie('oauth_token', oauth_token);
+
+        oauth_token_secret = crypto.encrypt(oauth_token_secret).data;
+        res.cookie('oauth_token_secret', oauth_token_secret);
 
         if (status === 200) {
             console.log("Success! User authorized")
@@ -169,13 +168,9 @@ app.get('/identity', async (req, res) => {
     }
 
     try {
-        const cb = '/';
         const request_config = {
-            api_key: DISCOGS_API_KEY,
-            api_secret: DISCOGS_API_SECRET,
-            oauth_token: my_crypto.decrypt(req.cookies.oauth_token),
-            oauth_secret: my_crypto.decrypt(req.cookies.oauth_token_secret),
-            cb,
+            oauth_token: crypto.decrypt(req.cookies.oauth_token),
+            oauth_secret: crypto.decrypt(req.cookies.oauth_token_secret),
         }
         // Get the identity data
         const {data, status, statusText} = await discogs.getIdentity(request_config);
@@ -196,9 +191,9 @@ app.get('/identity', async (req, res) => {
 app.get('/new_user', async (req, res) => {
     try {
         // Get request_oauth_token { request_oauth_token, request_oauth_secret }
-        const oauth = await discogs.getOauthToken(DISCOGS_API_KEY, DISCOGS_API_SECRET, DISCOGS_OAUTH_REQUEST_TOKEN_URL, callback_url);
+        const oauth = await discogs.getOauthToken(DISCOGS_OAUTH_REQUEST_TOKEN_URL);
         // Add the token to the authentication url
-        const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + my_crypto.decrypt(oauth.oauth_token);
+        const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + crypto.decrypt(oauth.oauth_token, oauth.oauth_token_iv);
         
         // THis is a request oauth token, they send me a new one later
         // Set the encrypted oauth_token and encrypted oauth_token_secret cookies

@@ -1,0 +1,59 @@
+form(role='form')
+    fieldset
+        .container
+            .search-bar.container
+                input(type='text' name='search_box' id='search_box' value='placeholder')
+                button(type="search") Submit
+            .container
+                .label-container
+                    label Type
+                    select(name='type' value='' deselected)
+                        option(value='no option selected')
+                        option(value='release') Release
+                        option(value='master') Master
+                        option(value='artist') Artist
+                        option(value='label') Label
+                .label-container
+                    label Title
+                    input(type='text' name='title' value='')
+                .label-container
+                    label Release Title
+                    input(type='text' name='release_title' value='')
+                .label-container
+                    label ANV
+                    input(type='text' name='anv' value='')
+                .label-container
+                    label Label
+                    input(type='text' name='label' value='')
+                .label-container
+                    label Genre
+                    input(type='text' name='genre' value='')
+                .label-container
+                    label Style
+                    input(type='text' name='style' value='')
+                .label-container
+                    label Country
+                    input(type='text' name='country' value='')
+                .label-container
+                    label Year
+                    input(type='text' name='year' value='')
+                .label-container
+                    label Format
+                    input(type='text' name='format' value='')
+                .label-container
+                    label Catno
+                    input(type='text' name='catno' value='')
+                .label-container
+                    label Barcode
+                    input(type='text' name='barcode' value='')
+                .label-container
+                    label Track
+                    input(type='text' name='track' value='')
+                .label-container
+                    label Submitter
+                    input(type='text' name='submitter' value='')
+                .label-container
+                    label Contributor
+                    input(type='text' name='contributor' value='')
+style
+    include ../css/form.css
