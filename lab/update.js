@@ -1,0 +1,1 @@
+// update the values in javascript when they are received

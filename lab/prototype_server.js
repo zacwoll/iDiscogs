@@ -29,7 +29,7 @@ app.set('view engine', 'pug');
 
 // Pug Tester
 app.get('/', async (req, res) => {
-    res.render('includes/discogsSearchForm', {});
+    res.render('identity', {});
 });
 
 
