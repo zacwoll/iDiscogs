@@ -26263,14 +26263,13 @@ function configureHeaders(oauth_token, oauth_secret) {
   return headers;
 }
 function generateQueryUrl(prefix, query) {
-  let url = prefix + "q=" + query.query;
+  let url = prefix;
   for (const [key2, value] of Object.entries(query)) {
-    if (key2 != "query") {
-      if (value !== "") {
-        url += `&${key2}=${value}`;
-      }
+    if (value !== "") {
+      url += `&${key2}=${value}`;
     }
   }
+  console.log(url);
   return url;
 }
 async function search(request_config, query) {
@@ -26357,8 +26356,8 @@ app.post("/requestAnnotation", async (req, res) => {
 });
 app.post("/search", async (req, res) => {
   console.log("Hello from /search");
-  const query = req.body;
-  console.log(query);
+  let query = req.body.query;
+  query = JSON.parse(query);
   if (!req.body) {
     console.log("missing Data");
   }
@@ -26367,8 +26366,11 @@ app.post("/search", async (req, res) => {
       oauth_token: decrypt(req.cookies.oauth_token),
       oauth_secret: decrypt(req.cookies.oauth_token_secret)
     };
-    const results = await search(request_config, query);
-    console.log(results);
+    const { data, status, statusCode } = await search(request_config, query);
+    const pagination = data.pagination;
+    const results = data.results;
+    console.log(JSON.stringify(data.results, null, 2));
+    res.send(results);
   } catch (error) {
     console.log(error);
   } finally {

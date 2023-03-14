@@ -136,14 +136,13 @@ https://api.discogs.com/database/search?q={query}&
 ex: https://api.discogs.com/database/search?release_title=nevermind&artist=nirvana&per_page=3&page=1
 */
 export function generateQueryUrl(prefix, query) {
-    let url = prefix + 'q=' + query.query;
+    let url = prefix;
     for (const [key, value] of Object.entries(query)) {
-        if (key != 'query') {
-            if (value !== '') {
-                url += `&${key}=${value}`;
-            }
+        if (value !== '') {
+            url += `&${key}=${value}`;
         }
       }
+      console.log(url);
       return url;
 }
 

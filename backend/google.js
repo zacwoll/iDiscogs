@@ -14,7 +14,7 @@ export async function getAnnotation(imageData) {
               "features":[
                 {
                   "type":"WEB_DETECTION",
-                  "maxResults":1
+                  "maxResults": 1
                 }
               ]
             }
