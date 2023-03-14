@@ -81,7 +81,7 @@ nav {
 
 img {
     width: 100%;
-    height: 100%;
+    aspect-ratio: 1 / 1;
 }
 
 /** Form
@@ -221,4 +221,44 @@ textarea:invalid:not(:focus):not(:placeholder-shown) {
 input:required:valid:not(:placeholder-shown),
 textarea:valid:not(:placeholder-shown) {
     border: 0.1rem solid var(--color-valid);
+}
+
+/** Results Container
+=====================*/
+
+#results-container {
+    display: none;
+    align-items: normal;
+    grid-template-rows: 1fr 10fr auto;
+}
+
+.result {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    padding: 8px;
+    height: fit-content;
+}
+
+.interactive {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+}
+
+.interactive div {
+    /* Replace with grid once centering is figured out */
+    display: flex;
+    justify-content: center;
+}
+
+.btn-container {
+    display: flex;
+    justify-items: center;
+    align-items: center;
+}
+
+.relevant-actions .btn-container btn {
+    width: 96%;
+    border-radius: 4px;
+    padding: 8px;
+    text-align: center;    
 }

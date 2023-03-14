@@ -6,7 +6,6 @@ const express = require('express')
 import * as discogs from './discogs';
 import * as crypto from './crypto';
 import * as google from './google';
-import { send } from 'process';
 
 // Express options
 const app = express()
@@ -90,10 +89,8 @@ app.get('/', async (req, res) => {
 
 app.post('/search', async (req, res) => {
     console.log('Hello from /search');
-    // console.log(req.body);
-    //
-    const query = req.body;
-    console.log(query);
+    let query = req.body.query;
+    query = JSON.parse(query);
 
     if (!req.body) {
         console.log('missing Data');
@@ -104,10 +101,13 @@ app.post('/search', async (req, res) => {
             oauth_token: crypto.decrypt(req.cookies.oauth_token),
             oauth_secret: crypto.decrypt(req.cookies.oauth_token_secret),
         }
-        // make google request
-        const results = await discogs.search(request_config, query);
-        console.log(results);
-        // res.send({results});
+        // make discogs request
+        const {data, status, statusCode} = await discogs.search(request_config, query);
+        const pagination = data.pagination
+        const results = data.results;
+        // console.log(data);
+        console.log(JSON.stringify(data.results, null, 2));
+        res.send(results);
     }
     catch (error) {
         console.log(error);
