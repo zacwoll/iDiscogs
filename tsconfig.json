@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "outDir": "./built",
+    "allowJs": true,
+    "target": "es6",
+    "noImplicitAny": true,
+    "noEmitOnError": false,
+    "moduleResolution": "node"
+  },
+  "include": ["./backend/**/*"]
+}

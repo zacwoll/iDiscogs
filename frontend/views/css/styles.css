@@ -245,9 +245,7 @@ textarea:valid:not(:placeholder-shown) {
 }
 
 .interactive div {
-    /* Replace with grid once centering is figured out */
-    display: flex;
-    justify-content: center;
+    display: grid;
 }
 
 .btn-container {
