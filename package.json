@@ -14,5 +14,8 @@
   "scripts": {
     "build": "esbuild ./backend/server.js --bundle --outfile=backend.js --platform=node",
     "watch": "esbuild ./backend/server.js --bundle --outdir=frontend --platform=node --watch"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.5"
   }
 }
