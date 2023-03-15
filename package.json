@@ -12,8 +12,8 @@
     "pug": "^3.0.2"
   },
   "scripts": {
-    "build": "esbuild ./backend/server.js --bundle --outfile=built/backend.js --platform=node",
-    "watch": "esbuild ./backend/server.js --bundle --outfile=built/backend.js --platform=node --watch"
+    "build": "esbuild ./built/server.js --bundle --outfile=built/backend.js --platform=node",
+    "watch": "esbuild ./built/server.js --bundle --outfile=built/backend.js --platform=node --watch"
   },
   "devDependencies": {
     "@types/node": "^18.15.3",

@@ -1,41 +1,34 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.decrypt = exports.encrypt = void 0;
-require('dotenv').config();
-// crypto module
-var crypto = require("crypto");
-var algorithm = "aes-256-cbc";
-var key = Buffer.from(process.env.SECURITY_KEY, 'hex');
-var iv = Buffer.from(process.env.SECURITY_IV, 'hex');
-// encrypt the message
-// input encoding
-// output encoding
-// let encryptedData = cipher.update(message, "utf-8", "hex");
-// Encrypts data given, such as Oauth_token and Oauth_secret
-// Returns web-friendly utf-8 encoded encrypted data object
-function encrypt(data) {
-    // let bsiv = crypto.randomBytes(16).toString('hex');
-    // Create Cipher based on file constants
-    var cipher = crypto.createCipheriv(algorithm, key, iv);
-    // encrypt the data into the cipher
-    var encrypted = cipher.update(data);
-    // call cipher.final() to close the cipher
+// Load environment variables from a .env file with `dotenv`
+import * as dotenv from 'dotenv';
+dotenv.config();
+import * as crypto from 'crypto';
+// Define the encryption algorithm to use
+const algorithm = 'aes-256-cbc';
+// Load the encryption key and initialization vector from environment variables
+const key = Buffer.from(process.env.SECURITY_KEY, 'hex');
+const iv = Buffer.from(process.env.SECURITY_IV, 'hex');
+/**
+ * Encrypts the given data using AES-256-CBC encryption.
+ *
+ * @param data The data to encrypt.
+ * @returns An object containing the encrypted data in web-friendly UTF-8 format.
+ */
+export function encrypt(data) {
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    let encrypted = cipher.update(data);
     encrypted = Buffer.concat([encrypted, cipher.final()]);
     return { data: encrypted.toString('hex') };
 }
-exports.encrypt = encrypt;
-// Decrypts data given, assumes data is in utf-8
-// Returns a decrypted string containing data
-function decrypt(encryptedData) {
-    var encryptedText = Buffer.from(encryptedData, 'hex');
-    // let decodedData = Buffer.from(encryptedData, 'base64', 'hex');
-    // Create a Decipher
-    var decipher = crypto.createDecipheriv(algorithm, Buffer.from(key), iv);
-    // Give it our encrypted Text
-    var decrypted = decipher.update(encryptedText);
-    // Call decipher.final() to close it
+/**
+ * Decrypts the given encrypted data using AES-256-CBC encryption.
+ *
+ * @param encryptedData The encrypted data to decrypt.
+ * @returns The decrypted data as a string.
+ */
+export function decrypt(encryptedData) {
+    const encryptedText = Buffer.from(encryptedData, 'hex');
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    let decrypted = decipher.update(encryptedText);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
-    // return decrypted string
     return decrypted.toString('utf-8');
 }
-exports.decrypt = decrypt;

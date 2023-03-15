@@ -32,7 +32,7 @@ const AUTH_URL = 'https://api.discogs.com/oauth/access_token';
 // Set up the public assets
 // app.use(express.static('public'));
 
-console.log(path.join(__dirname, '..', 'frontend', 'views'));
+// console.log(path.join(__dirname, '..', 'frontend', 'views'));
 app.use(express.static(path.join(__dirname, 'frontend/public')));
 app.set('views', path.join(__dirname, '..', 'frontend', 'views'));
 app.set('view engine', 'pug');
