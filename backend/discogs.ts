@@ -176,6 +176,11 @@ const response = await axios.get<DiscogsSearchResult>('https://api.discogs.com/d
     },
 });
 
+if (response.status != 200) {
+  console.error(response.statusText);
+}
+
+
 // Return the search results from the response data
 return response.data.results;
 }

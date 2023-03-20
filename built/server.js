@@ -7,30 +7,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import * as dotenv from 'dotenv';
-dotenv.config();
-const express = require('express');
+import express from 'express'; // added types for express library
+import cookieParser from 'cookie-parser'; // changed require to import 
 import * as discogs from './discogs';
 import * as crypto from './crypto';
 import * as google from './google';
 // Express options
-const app = express();
+const app = express(); // adding type to app const
 const port = 3000;
 // Allows body parsing
 app.use(express.urlencoded({ limit: '50mb', extended: false }));
 // Allows cookies to be understood by the server
-const cookieParser = require('cookie-parser');
-// lets you use the cookieParser in your application
 app.use(cookieParser());
-const path = require('path');
-const axios = require('axios').default;
+import path from 'path'; // converted require to import
 // Discogs API information
 const DISCOGS_OAUTH_REQUEST_TOKEN_URL = 'https://api.discogs.com/oauth/request_token';
 const DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL = 'https://discogs.com/oauth/authorize?oauth_token=';
 const AUTH_URL = 'https://api.discogs.com/oauth/access_token';
 // Set up the public assets
-// app.use(express.static('public'));
-console.log(path.join(__dirname, '..', 'frontend', 'views'));
 app.use(express.static(path.join(__dirname, 'frontend/public')));
 app.set('views', path.join(__dirname, '..', 'frontend', 'views'));
 app.set('view engine', 'pug');
