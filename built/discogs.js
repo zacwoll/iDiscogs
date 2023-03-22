@@ -7,6 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+// Load environment variables from a .env file with `dotenv`
+import * as dotenv from 'dotenv';
+dotenv.config();
+// imports
 import axios from 'axios';
 import * as crypto from './crypto';
 // Discogs API information
@@ -15,23 +19,24 @@ const DISCOGS_API_KEY = process.env.DISCOGS_API_KEY;
 const DISCOGS_API_SECRET = process.env.DISCOGS_API_SECRET;
 const DISCOGS_OAUTH_POST_URL = 'https://api.discogs.com/oauth/access_token';
 const callback_url = process.env.callback_url;
-/**
- * Requests and retrieves an initial 'request' OAuth Token from Discogs API
- * @param oauth_url The Discogs OAuth URL
- * @returns Encrypted OAuth Token and OAuth Token Secret
- * { oauth_token, oauth_token_secret }
- */
-export function getOauthToken(oauth_url) {
+// Get OAuth Token from api.discogs.com
+// Requests and retrieves an initial 'request' Oauth Token from Discogs API
+// Returns encrypted oauth object
+// { oauth_token, oauth_token_secret }
+// Is there a custom oauth_url? (yes)
+// https://api.discogs.com/oauth/request_token
+export function getOauthToken() {
     return __awaiter(this, void 0, void 0, function* () {
+        const oauth_url = 'https://api.discogs.com/oauth/request_token';
         const response = yield axios.get(oauth_url, {
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                Authorization: `OAuth oauth_consumer_key="${DISCOGS_API_KEY}",` +
-                    `oauth_nonce="${Date.now()}",` +
-                    `oauth_signature="${DISCOGS_API_SECRET}&",` +
-                    'oauth_signature_method="PLAINTEXT",' +
-                    `oauth_timestamp="${Date.now()}",` +
-                    `oauth_callback="${callback_url}"`,
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": `OAuth oauth_consumer_key=\"${DISCOGS_API_KEY}\",` +
+                    `oauth_nonce=\"${Date.now()}\",` +
+                    `oauth_signature=\"${DISCOGS_API_SECRET}&\",` +
+                    `oauth_signature_method=\"PLAINTEXT\",` +
+                    `oauth_timestamp=\"${Date.now()}\",` +
+                    `oauth_callback=\"${callback_url}\"`
             },
         });
         let [oauth_token, oauth_token_secret] = response.data.split('&');
@@ -43,39 +48,34 @@ export function getOauthToken(oauth_url) {
         return { oauth_token, oauth_token_secret };
     });
 }
-/**
- * Posts a complete set of access request keys to Discogs API
- * @param oauth_token OAuth Token
- * @param oauth_secret OAuth Token Secret
- * @param oauth_verifier OAuth Verifier
- * @returns Axios response
- */
-export function postVerificationToken(oauth_token, oauth_secret, oauth_verifier) {
+// POST the now-verified token
+// This function posts a complete set of access request keys to discogs API
+export function postVerificationToken(verification_token) {
     return __awaiter(this, void 0, void 0, function* () {
         const request = {
             method: 'POST',
             url: DISCOGS_OAUTH_POST_URL,
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                Authorization: `OAuth oauth_consumer_key="${DISCOGS_API_KEY}",` +
-                    `oauth_nonce="${Date.now()}",` +
-                    `oauth_token="${oauth_token}",` +
-                    `oauth_signature="${DISCOGS_API_SECRET}&${oauth_secret}",` +
-                    'oauth_signature_method="PLAINTEXT",' +
-                    `oauth_timestamp="${Date.now()}",` +
-                    `oauth_verifier="${oauth_verifier}"`,
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": '' +
+                    `OAuth oauth_consumer_key=\"${DISCOGS_API_KEY}\",` +
+                    `oauth_nonce=\"${Date.now()}\",` +
+                    `oauth_token=\"${verification_token.request_token}\",` +
+                    `oauth_signature=\"${DISCOGS_API_SECRET}&${verification_token.request_token_secret}\",` +
+                    `oauth_signature_method=\"PLAINTEXT\",` +
+                    `oauth_timestamp=\"${Date.now()}\",` +
+                    `oauth_verifier=\"${verification_token.verification_code}\"`
             },
         };
+        console.log({ request });
         const response = yield axios(request);
-        console.log('Authorizing User');
+        console.log("Authorizing User");
         return response;
     });
 }
-/**
- * Sends a GET request to the Discogs API to retrieve user identity
- * @param request_config Encrypted OAuth Token and OAuth Token Secret
- * @returns Axios response
- */
+// Test how to create an authorized request on getting a 200 response from 
+// GET https://api.discogs.com/oauth/identity
+// oauth 
 export function getIdentity(request_config) {
     return __awaiter(this, void 0, void 0, function* () {
         // IDENTITY endpoint
@@ -86,25 +86,24 @@ export function getIdentity(request_config) {
         return response;
     });
 }
-/**
- * Configure an HTTP request with the given method, URL, and authentication token.
- *
- * @param method - The HTTP method to use for the request (e.g. "GET", "POST", "PUT").
- * @param url - The URL to send the request to.
- * @param config - An authentication token to use for the request.
- * @returns A RequestOptions object containing the configured HTTP request.
- */
+/*
+    configure an authorized request for discogs, before putting data in it
+    This is a function intended to make easier requests from discogs
+    THis is a premade request with the right headers the first time, not configuring them on the fly
+*/
+// Technically method is ['GET', 'PUT', 'POST', 'DELETE'] idk of any others
+// url is always going be some string representation of a web address
 export function configureRequest(method, url, config) {
-    // Create a new RequestOptions object with the method and URL provided
     let request = {
         method: method,
         url: url,
+        headers: configureHeaders(config),
     };
-    // Set the headers for the request using the given authentication token
-    request.headers = configureHeaders(config);
-    // Return the fully-configured RequestOptions object
     return request;
 }
+/*
+    Configure the headers for an authorized request
+*/
 // Define the headers to be sent with the request
 export function configureHeaders(oAuthToken) {
     // Define an object to hold the headers
@@ -122,20 +121,52 @@ export function configureHeaders(oAuthToken) {
     };
     return headers;
 }
-// Define a function to search for Discogs items
-export function search(query) {
+/*
+https://api.discogs.com/database/search?q={query}&
+    \{?
+        type, - [release, master, artist, label]
+        title,
+        release_title,
+        credit,artist,
+        anv,
+        label,
+        genre,
+        style,
+        country,
+        year,
+        format,
+        catno,
+        barcode,
+        track,
+        submitter,
+        contributor
+    }
+ex: https://api.discogs.com/database/search?release_title=nevermind&artist=nirvana&per_page=3&page=1
+*/
+export function generateQueryUrl(prefix, query) {
+    let url = prefix;
+    for (const [key, value] of Object.entries(query)) {
+        if (value !== '') {
+            url += `&${key}=${value}`;
+        }
+    }
+    console.log(url);
+    return url;
+}
+export function search(request_config, query) {
     return __awaiter(this, void 0, void 0, function* () {
-        // Make a GET request to the Discogs API search endpoint
-        const response = yield axios.get('https://api.discogs.com/database/search', {
-            // Set the request parameters
-            params: {
-                q: query,
-                type: 'master',
-                per_page: 10,
-                page: 1, // The page number of results to return
-            },
-        });
-        // Return the search results from the response data
-        return response.data.results;
+        // This is the url but I'd like to create a more basic version of this that accepts a URL arg
+        const SEARCH_URL = 'https://api.discogs.com/database/search?';
+        const url = generateQueryUrl(SEARCH_URL, query);
+        let request = configureRequest('GET', url, request_config);
+        return axios(request);
+        // console.log(request);
+        // try {
+        //     const response = await axios(request);
+        //     console.log("Sent Authorized request.");
+        //     return response;
+        // } catch (error) {
+        //     throw error;
+        // }
     });
 }

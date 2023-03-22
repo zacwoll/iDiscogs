@@ -7,24 +7,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import express from 'express'; // added types for express library
-import cookieParser from 'cookie-parser'; // changed require to import 
+import * as dotenv from 'dotenv';
+dotenv.config();
+import express from 'express';
 import * as discogs from './discogs';
 import * as crypto from './crypto';
 import * as google from './google';
 // Express options
-const app = express(); // adding type to app const
+const app = express();
 const port = 3000;
 // Allows body parsing
 app.use(express.urlencoded({ limit: '50mb', extended: false }));
 // Allows cookies to be understood by the server
+const cookieParser = require('cookie-parser');
+// lets you use the cookieParser in your application
 app.use(cookieParser());
-import path from 'path'; // converted require to import
+const path = require('path');
+const axios = require('axios').default;
 // Discogs API information
 const DISCOGS_OAUTH_REQUEST_TOKEN_URL = 'https://api.discogs.com/oauth/request_token';
 const DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL = 'https://discogs.com/oauth/authorize?oauth_token=';
 const AUTH_URL = 'https://api.discogs.com/oauth/access_token';
 // Set up the public assets
+// app.use(express.static('public'));
+// console.log(path.join(__dirname, '..', 'frontend', 'views'));
 app.use(express.static(path.join(__dirname, 'frontend/public')));
 app.set('views', path.join(__dirname, '..', 'frontend', 'views'));
 app.set('view engine', 'pug');
@@ -84,14 +90,16 @@ app.post('/search', (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         const request_config = {
             oauth_token: crypto.decrypt(req.cookies.oauth_token),
-            oauth_secret: crypto.decrypt(req.cookies.oauth_token_secret),
+            oauth_token_secret: crypto.decrypt(req.cookies.oauth_token_secret),
         };
         // make discogs request
-        const { data, status, statusCode } = yield discogs.search(request_config, query);
-        const pagination = data.pagination;
-        const results = data.results;
+        const response = yield discogs.search(request_config, query);
+        if (response.status !== 200) {
+            return;
+        }
+        const { data: { results } } = response;
         // console.log(data);
-        console.log(JSON.stringify(data.results, null, 2));
+        console.log(JSON.stringify(results, null, 2));
         res.send(results);
     }
     catch (error) {
@@ -128,9 +136,14 @@ app.post('/auth', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     const request_token = crypto.decrypt(req.cookies.request_token);
     const request_token_secret = crypto.decrypt(req.cookies.request_token_secret);
-    const request_token_verifier = req.body.token;
+    const verification_code = req.body.token;
+    const request = {
+        request_token,
+        request_token_secret,
+        verification_code,
+    };
     try {
-        const { data, status, statusText } = yield discogs.postVerificationToken(request_token, request_token_secret, request_token_verifier);
+        const { data, status, statusText } = yield discogs.postVerificationToken(request);
         // data is the axios styled response
         console.log({ data, status, statusText });
         // set new oauth_token and secret from incoming data
@@ -162,6 +175,7 @@ app.get('/identity', (req, res) => __awaiter(void 0, void 0, void 0, function* (
     console.log("GET /identity started");
     const cookies = req.cookies;
     if (!cookies.oauth_token || !cookies.oauth_token_secret) {
+        console.log('butt');
         if (!cookies.request_token) {
             res.redirect('/new_user');
         }
@@ -172,7 +186,7 @@ app.get('/identity', (req, res) => __awaiter(void 0, void 0, void 0, function* (
     try {
         const request_config = {
             oauth_token: crypto.decrypt(req.cookies.oauth_token),
-            oauth_secret: crypto.decrypt(req.cookies.oauth_token_secret),
+            oauth_token_secret: crypto.decrypt(req.cookies.oauth_token_secret),
         };
         // Get the identity data
         const { data, status, statusText } = yield discogs.getIdentity(request_config);
@@ -191,9 +205,9 @@ app.get('/identity', (req, res) => __awaiter(void 0, void 0, void 0, function* (
 app.get('/new_user', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Get request_oauth_token { request_oauth_token, request_oauth_secret }
-        const oauth = yield discogs.getOauthToken(DISCOGS_OAUTH_REQUEST_TOKEN_URL);
+        const oauth = yield discogs.getOauthToken();
         // Add the token to the authentication url
-        const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + crypto.decrypt(oauth.oauth_token, oauth.oauth_token_iv);
+        const oauthUrl = DISCOGS_OAUTH_AUTHENTICATE_TOKEN_URL + crypto.decrypt(oauth.oauth_token);
         // THis is a request oauth token, they send me a new one later
         // Set the encrypted oauth_token and encrypted oauth_token_secret cookies
         res.cookie('request_token', oauth.oauth_token);
