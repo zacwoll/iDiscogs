@@ -205,3 +205,20 @@ export async function search(request_config: OAuthToken, query : Object) : Promi
 
     return axios(request);
 }
+
+type PathConfig = {
+    username: string,
+    folder_id: number,
+    release_id: string,
+}
+export function generateCollectionUrl(path_config: PathConfig) {
+    return `/users/${path_config.username}/collection/folders/${path_config.folder_id}/releases/${path_config.release_id}`;
+}
+
+// 'POST' '/users/{username}/collection/folders/{folder_id}/releases/{release_id}'
+export async function addToLibrary(path_config: PathConfig, oauth_config: OAuthToken) : Promise<AxiosResponse> {
+    const url = generateCollectionUrl(path_config);
+    let request = configureRequest('POST', url, oauth_config);
+
+    return axios(request);
+}
